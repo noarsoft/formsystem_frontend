@@ -1,0 +1,12 @@
+{
+  "fname": {
+    "type": "string",
+    "value": "piyavach"
+  },
+  "hobby": {
+    "type": "number",
+    "is_array": 1,
+    "options": ["guitar", "piano", "violin"],
+    "value": [0,1,1]
+  }
+}

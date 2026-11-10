@@ -1,0 +1,10 @@
+main {
+  width: min(100% - 32px, 960px);
+  margin: 40px auto;
+}
+
+pre {
+  overflow: auto;
+  padding: 16px;
+  background: #f3f5f8;
+}
