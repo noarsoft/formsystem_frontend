@@ -36,6 +36,7 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
   const [typeIndex, setTypeIndex] = useState(0)
   const [label, setLabel] = useState('')
   const [optionsText, setOptionsText] = useState('')
+  const [rowsText, setRowsText] = useState('')
   const [cell, setCell] = useState<string | null>(null)
   const [required, setRequired] = useState<0 | 1>(0)
   // Index into `formats`, or -1 for none (textbox only).
@@ -56,7 +57,8 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
   ]
   const cellIndex = cells.findIndex((c) => cellKey(c.cell) === cell)
   const type = ADDABLE_TYPES[typeIndex].type
-  const isChoice = CHOICE_TYPES.includes(type)
+  const isMatrix = type === 'matrix'
+  const isChoice = CHOICE_TYPES.includes(type) || isMatrix
   const isLabel = type === 'label'
 
   const editorForm: FormDocument = {
@@ -73,8 +75,13 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
           required: true, colno: 0, rowno: 1,
         },
         ...(isChoice ? [{
-          type: 'textbox' as const, id: 'new_options', label: 'ตัวเลือก (คั่นด้วย ,)', placeholder: 'เช่น ชาย, หญิง',
+          type: 'textbox' as const, id: 'new_options', label: isMatrix ? 'คอลัมน์/คำตอบ (คั่นด้วย ,)' : 'ตัวเลือก (คั่นด้วย ,)',
+          placeholder: isMatrix ? 'เช่น พอใจมาก, พอใจ, ไม่พอใจ' : 'เช่น ชาย, หญิง',
           databinding: 'new_options', required: true, colno: 1, rowno: 1,
+        }] : []),
+        ...(isMatrix ? [{
+          type: 'textbox' as const, id: 'new_rows', label: 'คำถาม/แถว (คั่นด้วย ,)', placeholder: 'เช่น ความสะอาด, การบริการ',
+          databinding: 'new_rows', required: true, colno: 1, rowno: 2,
         }] : []),
         ...(type === 'textbox' ? [{
           type: 'dropdown' as const, id: 'new_format', label: 'รูปแบบข้อมูล (format)', databinding: 'new_format',
@@ -92,6 +99,7 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
     new_cell: { type: 'number', is_array: 1, options: cells.map((c) => c.name), value: oneHot(cells.length, cellIndex) },
     new_label: { type: 'string', value: label },
     new_options: { type: 'string', value: optionsText },
+    new_rows: { type: 'string', value: rowsText },
     new_required: { type: 'number', value: required },
     new_format: {
       type: 'number', is_array: 1, options: formats.map((f) => TEXT_FORMATS[f].name), value: oneHot(formats.length, formatIndex),
@@ -108,6 +116,7 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
     setCell(pick('new_cell') >= 0 ? cellKey(cells[pick('new_cell')].cell) : null)
     setLabel(text('new_label'))
     setOptionsText(text('new_options'))
+    setRowsText(text('new_rows'))
     setRequired(next.new_required.value === 1 ? 1 : 0)
     setFormatIndex(pick('new_format'))
     setMessage(null)
@@ -118,19 +127,27 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
       setShowErrors(true)
       return
     }
-    const options = optionsText.split(',').map((option) => option.trim()).filter(Boolean)
+    const split = (text: string) => text.split(',').map((item) => item.trim()).filter(Boolean)
+    const options = split(optionsText)
+    const rows = split(rowsText)
     if (isChoice && options.length === 0) {
       setMessage('กรุณาใส่ตัวเลือกอย่างน้อย 1 รายการ')
+      return
+    }
+    if (isMatrix && rows.length === 0) {
+      setMessage('กรุณาใส่คำถามอย่างน้อย 1 ข้อ')
       return
     }
     const result = addControl(form, data, {
       type, label: label.trim(), required: required === 1, options, cell: cells[cellIndex].cell,
       format: type === 'textbox' && formatIndex >= 0 ? formats[formatIndex] : undefined,
+      rows: isMatrix ? rows : undefined,
     })
     onChange(result.form, result.data)
     setLabel('')
     setFormatIndex(-1)
     setOptionsText('')
+    setRowsText('')
     setCell(null)
     setShowErrors(false)
     setRound((n) => n + 1)

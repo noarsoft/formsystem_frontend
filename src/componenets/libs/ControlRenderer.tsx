@@ -11,6 +11,7 @@ import Option from '../control/option/Option'
 import DateField from '../control/date/date'
 import DateRangeField from '../control/date_range/DateRangeField'
 import DateTimeField from '../control/datetime/DateTimeField'
+import Matrix from '../control/matrix/Matrix'
 import NumberField from '../control/number/NumberField'
 import Rating from '../control/rating/Rating'
 import TimeField from '../control/time/TimeField'
@@ -22,7 +23,7 @@ import Badge from '../custom/badge/Badge'
 import Card from '../custom/card/Card'
 import type { ButtonConfig, ControlConfig } from './controlTypes'
 import {
-  dateRangeBindings, getChoiceState, ratingRange, getDateRangeValue, getDateTimeValue, getDateValue, getNumberFieldValue, getRatingValue, getSwitchValue, getTextValue, getTimeValue, replaceAt, toggleAccordionItem, toggleChoice,
+  dateRangeBindings, getChoiceState, ratingRange, getDateRangeValue, getDateTimeValue, getDateValue, getMatrixValues, getNumberFieldValue, getRatingValue, getSwitchValue, getTextValue, getTimeValue, replaceAt, toggleAccordionItem, toggleChoice,
   updateData,
 } from './controlValues'
 import type { FieldValue } from './controlValues'
@@ -132,6 +133,31 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
           unit={config.unit}
           disabled={config.disabled}
           onChange={commit}
+        />
+      )
+
+    case 'matrix':
+      return (
+        <Matrix
+          id={id}
+          readOnly={readOnly}
+          label={config.label}
+          required={required}
+          error={error}
+          style={config.style}
+          columns={config.columns}
+          rows={config.rows.map((row) => row.label)}
+          values={getMatrixValues(config, data)}
+          multiple={config.multiple}
+          disabled={config.disabled}
+          onChange={(index, value) => {
+            // Each row is written on its own: to its data key, or to its inline value.
+            if (readOnly) return
+            setTouched(true)
+            const row = config.rows[index]
+            if (row.databinding !== undefined) onDataChange?.(updateData(data, row.databinding, value))
+            else onChange({ ...config, rows: replaceAt(config.rows, index, { ...row, value }) })
+          }}
         />
       )
 

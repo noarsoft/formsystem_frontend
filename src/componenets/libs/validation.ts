@@ -4,7 +4,7 @@ import type {
 import { decimalPlaces, formatNumber } from './numberValue'
 import { isVisible } from './visibility'
 import {
-  getChoiceState, getDateRangeValue, getDateTimeValue, getDateValue, getNumberFieldValue, getRatingValue, getSwitchValue, getTextValue,
+  getChoiceState, getDateRangeValue, getDateTimeValue, getDateValue, getMatrixValues, getNumberFieldValue, getRatingValue, getSwitchValue, getTextValue,
   getTimeValue,
 } from './controlValues'
 import type { FieldValue } from './controlValues'
@@ -13,6 +13,7 @@ export const REQUIRED_TEXT_MESSAGE = 'กรุณากรอกข้อมู
 export const REQUIRED_DATE_MESSAGE = 'กรุณาเลือกวันที่'
 export const REQUIRED_TIME_MESSAGE = 'กรุณาเลือกเวลา'
 export const REQUIRED_RATING_MESSAGE = 'กรุณาให้คะแนน'
+export const requiredMatrixMessage = (missing: number) => `กรุณาตอบให้ครบทุกข้อ (ขาด ${missing} ข้อ)`
 export const REQUIRED_DATETIME_MESSAGE = 'กรุณาเลือกวันและเวลา'
 export const REQUIRED_DATE_RANGE_MESSAGE = 'กรุณาเลือกช่วงวันที่ให้ครบ'
 export const DATE_RANGE_ORDER_MESSAGE = 'วันสิ้นสุดต้องไม่ก่อนวันเริ่มต้น'
@@ -199,6 +200,12 @@ export function validateControl(config: ControlConfig, data?: FormData): string 
     case 'number': {
       const value = getNumberFieldValue(config, data)
       return checkRequired(config, value, REQUIRED_TEXT_MESSAGE) ?? numberRuleError(config, value)
+    }
+    case 'matrix': {
+      // Every row must be answered.
+      const missing = getMatrixValues(config, data).filter((value) => !value.includes(1)).length
+      if (!config.required || missing === 0) return null
+      return config.required_message ?? requiredMatrixMessage(missing)
     }
     case 'rating':
       return checkRequired(config, getRatingValue(config, data), REQUIRED_RATING_MESSAGE)

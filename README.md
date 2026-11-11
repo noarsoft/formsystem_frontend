@@ -58,7 +58,7 @@ function Example() {
 }
 ```
 
-Controls: `textbox`, `number`, `rating`, `date`, `date_range`, `time`, `datetime`, `textarea`, `switch`, `label`, `dropdown`, `checkbox_group`, `option`,
+Controls: `textbox`, `number`, `rating`, `matrix`, `date`, `date_range`, `time`, `datetime`, `textarea`, `switch`, `label`, `dropdown`, `checkbox_group`, `option`,
 `button` (controls); `container`, `grid`, `flex` (containers); `accordion`,
 `card`, `badge` (custom, in `src/componenets/custom`). A password field is a
 `textbox` with `input_type: "password"`: the text is hidden and a แสดง/ซ่อน
@@ -98,7 +98,7 @@ Every control is documented, with live examples, in `src/form/document`
 `libs/controlTypes.ts`, a case to `libs/ControlRenderer.tsx`, and an entry to
 `src/form/document/docs.ts`.
 
-Input controls (`textbox`, `number`, `rating`, `date`, `date_range`, `time`, `datetime`, `textarea`, `dropdown`,
+Input controls (`textbox`, `number`, `rating`, `matrix`, `date`, `date_range`, `time`, `datetime`, `textarea`, `dropdown`,
 `checkbox_group`, `option`, `switch`) accept `required: true` and an optional
 `required_message`. A required control shows a red `*` after its label and, when
 its value is empty (blank or whitespace-only text, a `null` date, or no option
@@ -155,6 +155,15 @@ number buttons (`display: "number"`, e.g. `min: 0, max: 10` for NPS) with
 optional `min_label` / `max_label` under the ends. The value is a whole number
 or `null`, bound to `{ "type": "number", "value": 4 }`; hovering previews,
 clicking the current score clears it, and arrow keys / Home / End move it.
+
+`matrix` is a grid of questions (`rows`) sharing the same answers (`columns`).
+Each row is stored like an `option` in its own data key
+(`{ "label": "ราคา", "databinding": "q_price" }` →
+`{ "type": "number", "is_array": 1, "options": columns, "value": [0, 1, 0] }`),
+so `visible_if` can use a single row's answer; inline rows use `value` instead.
+`multiple: true` allows several columns per row. A required matrix needs every
+row answered and marks the missing ones. When the control is narrow (a container
+query, so it also works inside a half-width column) it shows one question at a time.
 
 `style` (on any control) accepts `padding`, `margin`, `font_size`, `color`, and
 `border`; `front_size` and `boarder` are accepted as aliases.

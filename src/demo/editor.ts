@@ -14,6 +14,7 @@ export const ADDABLE_TYPES = [
   { type: 'dropdown', name: 'ดรอปดาวน์ (dropdown)' },
   { type: 'checkbox_group', name: 'ติ๊กได้หลายข้อ (checkbox_group)' },
   { type: 'option', name: 'เลือกข้อเดียว (option)' },
+  { type: 'matrix', name: 'ตารางคำถาม (matrix)' },
   { type: 'switch', name: 'สวิตช์ (switch)' },
   { type: 'label', name: 'ข้อความกำกับ (label)' },
 ] as const
@@ -36,6 +37,8 @@ export interface NewControl {
   cell: Cell
   // textbox only: a ready-made format such as phone_th.
   format?: TextFormat
+  // matrix only: the question of each row (`options` are its columns).
+  rows?: string[]
 }
 
 // The editor works on the first grid at the top of the form.
@@ -94,6 +97,9 @@ export function bindingsOf(controls: ControlConfig[]): string[] {
       const value = (control as Partial<Record<typeof key, string>>)[key]
       if (value !== undefined) keys.push(value)
     }
+    if (control.type === 'matrix') {
+      for (const row of control.rows) if (row.databinding !== undefined) keys.push(row.databinding)
+    }
   })
   return keys
 }
@@ -106,7 +112,8 @@ export function uniqueId(form: FormDocument, data: FormData, type: string): stri
   })
   for (let n = 1; ; n++) {
     const id = `${type}_${n}`
-    if (![id, `${id}_from`, `${id}_to`].some((key) => taken.has(key))) return id
+    // Also keep clear of keys derived from the id (date_range_1_from, matrix_1_1, …).
+    if (![...taken].some((key) => key === id || key.startsWith(`${id}_`))) return id
   }
 }
 
@@ -145,6 +152,17 @@ function newControl(input: NewControl, id: string): { control: ControlConfig, fi
         control: { ...base, type, databinding: id },
         fields: { [id]: { type: 'number', is_array: 1, options: input.options, value: input.options.map(() => 0) } },
       }
+    case 'matrix': {
+      const rows = input.rows ?? []
+      if (input.options.length === 0 || rows.length === 0) throw new Error('A matrix needs at least one row and one column')
+      const keys = rows.map((_, i) => `${id}_${i + 1}`)
+      return {
+        control: { ...base, type, columns: input.options, rows: rows.map((row, i) => ({ label: row, databinding: keys[i] })) },
+        fields: Object.fromEntries(keys.map((key) => [
+          key, { type: 'number', is_array: 1, options: input.options, value: input.options.map(() => 0) },
+        ])) as FormData,
+      }
+    }
     case 'label':
       return { control: { type: 'label', id, text: label, ...cell }, fields: {} }
   }

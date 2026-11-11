@@ -315,6 +315,54 @@ export const controlDocs: ControlDoc[] = [
     ],
   },
   {
+    type: 'matrix',
+    group: 'Control',
+    summary:
+      'ตารางคำถามที่ใช้คำตอบชุดเดียวกัน เช่น แบบประเมินความพึงพอใจ แต่ละแถวเก็บแยก 1 key ใน data ' +
+      'รูปแบบเดียวกับ option ({ "type": "number", "is_array": 1, "options": columns, "value": [0,1,0] }) ' +
+      'จึงใช้ visible_if กับคำตอบของแถวได้ จอ/กล่องแคบจะแสดงทีละคำถาม',
+    props: [
+      { name: 'label', type: 'string', description: 'หัวข้อของตาราง' },
+      { name: 'columns', type: 'string[]', description: 'คำตอบที่ทุกแถวใช้ร่วมกัน (บังคับ)' },
+      {
+        name: 'rows',
+        type: '{ label: string; databinding?: string; value?: number[] }[]',
+        description: 'คำถามแต่ละแถว ผูก data ด้วย databinding หรือเก็บใน value (0/1 ต่อคอลัมน์) (บังคับ)',
+      },
+      { name: 'multiple', type: 'boolean', default: 'false', description: 'ตอบได้หลายคอลัมน์ต่อแถว (checkbox)' },
+      disabledChoiceProp,
+      {
+        name: 'required',
+        type: 'boolean',
+        default: 'false',
+        description: 'ต้องตอบครบทุกแถว แถวที่ยังไม่ตอบจะเป็นสีแดง ข้อความ "กรุณาตอบให้ครบทุกข้อ (ขาด N ข้อ)"',
+      },
+      { name: 'required_message', type: 'string', description: 'ข้อความแจ้งเตือนแทนข้อความมาตรฐาน' },
+      readonlyProp,
+    ],
+    examples: [
+      {
+        type: 'matrix', id: 'ex_matrix', label: 'ความพึงพอใจต่อบริการ (required)', required: true,
+        columns: ['พอใจมาก', 'พอใจ', 'เฉย ๆ', 'ไม่พอใจ'],
+        rows: [
+          { label: 'ความสะอาด', databinding: 'q_clean' },
+          { label: 'การบริการ', databinding: 'q_service' },
+          { label: 'ราคา', databinding: 'q_price' },
+        ],
+      },
+      {
+        type: 'textbox', id: 'ex_matrix_why', label: 'ทำไมไม่พอใจเรื่องราคา (visible_if บนแถว "ราคา")', databinding: 'price_reason',
+        visible_if: { field: 'q_price', equals: 'ไม่พอใจ' },
+      },
+    ],
+    data: {
+      q_clean: { type: 'number', is_array: 1, options: ['พอใจมาก', 'พอใจ', 'เฉย ๆ', 'ไม่พอใจ'], value: [0, 1, 0, 0] },
+      q_service: { type: 'number', is_array: 1, options: ['พอใจมาก', 'พอใจ', 'เฉย ๆ', 'ไม่พอใจ'], value: [1, 0, 0, 0] },
+      q_price: { type: 'number', is_array: 1, options: ['พอใจมาก', 'พอใจ', 'เฉย ๆ', 'ไม่พอใจ'], value: [0, 0, 0, 0] },
+      price_reason: { type: 'string', value: '' },
+    },
+  },
+  {
     type: 'switch',
     group: 'Control',
     summary:

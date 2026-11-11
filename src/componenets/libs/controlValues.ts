@@ -1,5 +1,5 @@
 import type {
-  AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DateRangeConfig, DateTimeConfig, NumberConfig, RatingConfig, DropdownConfig, FormData,
+  AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DateRangeConfig, DateTimeConfig, MatrixConfig, NumberConfig, RatingConfig, DropdownConfig, FormData,
   OptionConfig, SwitchConfig, TextareaConfig, TextboxConfig, TimeConfig,
 } from './controlTypes'
 import { parseDateNumber, parseDateTimeNumber, parseTimeNumber } from './dateValue'
@@ -178,6 +178,37 @@ export function getRatingValue(config: RatingConfig, data?: FormData): number | 
     (value) => typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max,
     `whole number from ${min} to ${max}`,
   )
+}
+
+// The 0/1 answer of every matrix row, read from its data key or its inline value.
+// Columns must be a non-empty list of text; bound rows need a number array field whose
+// options (if given) are exactly the columns.
+export function getMatrixValues(config: MatrixConfig, data?: FormData): number[][] {
+  const name = controlName(config)
+  const { columns, rows } = config
+  if (!Array.isArray(columns) || columns.length === 0 || !columns.every((c) => typeof c === 'string')) {
+    throw new Error(`Control "${name}" columns must be a non-empty list of text`)
+  }
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error(`Control "${name}" rows must be a non-empty list`)
+  }
+  const multiple = config.multiple ?? false
+  return rows.map((row, index) => {
+    if (row.databinding === undefined) {
+      const value = row.value ?? columns.map(() => 0)
+      validateChoice(`Control "${name}" row ${index + 1}`, columns, value, multiple)
+      return value
+    }
+    const field = getField(config, row.databinding, data)
+    if (field.type !== 'number' || field.is_array !== 1) {
+      throw new Error(`Data binding "${row.databinding}" must be a number array field`)
+    }
+    if (field.options !== undefined && (field.options.length !== columns.length || field.options.some((o, i) => o !== columns[i]))) {
+      throw new Error(`Data binding "${row.databinding}" options must match the matrix columns`)
+    }
+    validateChoice(`Data binding "${row.databinding}"`, columns, field.value, multiple)
+    return field.value
+  })
 }
 
 // Returns the HHMM number (1430 = 14:30), or null when the time is empty.

@@ -135,6 +135,25 @@ export type RatingConfig = BaseControl & InputRules & {
   max_label?: string
 }
 
+// One question (row) of a matrix: its answer is kept in its own data key, or inline in `value`.
+export interface MatrixRowConfig {
+  label: string
+  databinding?: string
+  // 0/1 per column (inline rows only).
+  value?: number[]
+}
+
+// A grid of questions that share the same answer columns. Each row is stored like an
+// `option` (one data key per row: { type: 'number', is_array: 1, options: columns, value }).
+export type MatrixConfig = BaseControl & InputRules & {
+  type: 'matrix'
+  label?: string
+  columns: string[]
+  rows: MatrixRowConfig[]
+  // true = any number of columns per row (checkboxes); default one per row.
+  multiple?: boolean
+}
+
 export type TimeConfig = BaseControl & InputRules & {
   type: 'time'
   label?: string
@@ -285,6 +304,7 @@ export type ControlConfig =
   | TextareaConfig
   | NumberConfig
   | RatingConfig
+  | MatrixConfig
   | SwitchConfig
   | LabelConfig
   | DropdownConfig

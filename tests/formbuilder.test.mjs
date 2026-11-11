@@ -189,7 +189,7 @@ test('custom controls render accordion, card and badge', () => {
 
 test('every documented control type renders its examples', () => {
   const types = new Set(docs.controlDocs.map((doc) => doc.type))
-  assert.equal(types.size, 20)
+  assert.equal(types.size, 21)
   for (const doc of docs.controlDocs) {
     assert.doesNotThrow(() => render(doc.examples, doc.data), doc.type)
   }
@@ -683,18 +683,19 @@ test('addControl builds the right config and data for every addable type', () =>
   let form = { controls: [{ type: 'grid', id: 'g', columns: 1, rows: 1, controls: [] }] }
   let data = {}
   for (const [rowno, { type }] of editor.ADDABLE_TYPES.entries()) {
-    const options = editor.CHOICE_TYPES.includes(type) ? ['a', 'b'] : []
-    ;({ form, data } = editor.addControl(form, data, { type, label: `L${rowno}`, required: false, options, cell: { colno: 0, rowno } }))
+    const options = editor.CHOICE_TYPES.includes(type) || type === 'matrix' ? ['a', 'b'] : []
+    const rows = type === 'matrix' ? ['r1', 'r2'] : undefined
+    ;({ form, data } = editor.addControl(form, data, { type, label: `L${rowno}`, required: false, options, rows, cell: { colno: 0, rowno } }))
   }
   const { grid } = editor.findGrid(form)
   assert.equal(grid.rows, editor.ADDABLE_TYPES.length)
   assert.deepEqual(Object.keys(data), [
     'textbox_1', 'textarea_1', 'number_1', 'rating_1', 'date_1', 'date_range_1_from', 'date_range_1_to', 'time_1', 'datetime_1',
-    'dropdown_1', 'checkbox_group_1', 'option_1', 'switch_1',
+    'dropdown_1', 'checkbox_group_1', 'option_1', 'matrix_1_1', 'matrix_1_2', 'switch_1',
   ])
   assert.deepEqual(data.option_1, { type: 'number', is_array: 1, options: ['a', 'b'], value: [0, 0] })
   assert.deepEqual(data.switch_1, { type: 'number', value: 0 })
-  assert.deepEqual(grid.controls.at(-1), { type: 'label', id: 'label_1', text: 'L12', colno: 0, rowno: 12 })
+  assert.deepEqual(grid.controls.at(-1), { type: 'label', id: 'label_1', text: 'L13', colno: 0, rowno: 13 })
   assert.equal(grid.controls.some((c) => 'required' in c), false)
   assert.doesNotThrow(() => render(form.controls, data))
   assert.deepEqual(validation.validateForm(form, data), [])
@@ -1166,4 +1167,73 @@ test('rating validation and markup', () => {
   assert.match(ro, /id="x-2" role="radio" aria-checked="true" aria-label="2 ดาว" aria-readonly="true"/)
   assert.match(ro, /class="fs-rating is-star is-disabled"/)
   assert.doesNotMatch(ro.split('id="y"')[1], /tabindex="0"/)
+})
+
+// ---- matrix ----
+
+const matrixColumns = ['พอใจมาก', 'พอใจ', 'ไม่พอใจ']
+const matrixData = {
+  q_clean: { type: 'number', is_array: 1, options: matrixColumns, value: [0, 1, 0] },
+  q_price: { type: 'number', is_array: 1, options: matrixColumns, value: [0, 0, 0] },
+}
+const matrix = (extra) => ({
+  type: 'matrix', id: 'm', label: 'ความพึงพอใจ', columns: matrixColumns,
+  rows: [{ label: 'ความสะอาด', databinding: 'q_clean' }, { label: 'ราคา', databinding: 'q_price' }],
+  ...extra,
+})
+
+test('matrix reads one data key (or inline value) per row', () => {
+  assert.deepEqual(values.getMatrixValues(matrix(), matrixData), [[0, 1, 0], [0, 0, 0]])
+  const inline = { type: 'matrix', columns: ['a', 'b'], rows: [{ label: 'x', value: [1, 0] }, { label: 'y' }] }
+  assert.deepEqual(values.getMatrixValues(inline), [[1, 0], [0, 0]])
+  assert.throws(() => values.getMatrixValues(matrix(), { q_clean: matrixData.q_clean }), /bound to "q_price"/)
+  assert.throws(() => values.getMatrixValues(matrix(), { ...matrixData, q_price: { type: 'string', value: '' } }), /number array field/)
+  assert.throws(() => values.getMatrixValues(matrix(), { ...matrixData, q_price: { ...matrixData.q_price, options: ['a', 'b', 'c'] } }), /options must match the matrix columns/)
+  assert.throws(() => values.getMatrixValues(matrix(), { ...matrixData, q_price: { ...matrixData.q_price, value: [1, 1, 0] } }), /at most one/)
+  assert.deepEqual(values.getMatrixValues(matrix({ multiple: true }), { ...matrixData, q_price: { ...matrixData.q_price, value: [1, 1, 0] } })[1], [1, 1, 0])
+  assert.throws(() => values.getMatrixValues({ ...inline, columns: [] }), /columns must be a non-empty list/)
+  assert.throws(() => values.getMatrixValues({ ...inline, rows: [] }), /rows must be a non-empty list/)
+  assert.throws(() => values.getMatrixValues({ ...inline, rows: [{ label: 'x', value: [1] }] }), /matching options/)
+})
+
+test('a required matrix needs every row answered', () => {
+  assert.equal(validation.validateControl(matrix({ required: true }), matrixData), 'กรุณาตอบให้ครบทุกข้อ (ขาด 1 ข้อ)')
+  assert.equal(validation.validateControl(matrix(), matrixData), null)
+  const answered = { ...matrixData, q_price: { ...matrixData.q_price, value: [0, 0, 1] } }
+  assert.equal(validation.validateControl(matrix({ required: true }), answered), null)
+  assert.equal(validation.validateControl(matrix({ required: true, required_message: 'ตอบให้ครบ' }), matrixData), 'ตอบให้ครบ')
+  // A row's answer works with visible_if like any option field.
+  assert.equal(visibility.isVisible({ type: 'label', text: 'x', visible_if: { field: 'q_clean', equals: 'พอใจ' } }, matrixData), true)
+})
+
+test('matrix renders a header, one radio group per row and marks missing rows', () => {
+  const html = render([matrix({ required: true })], matrixData, { showErrors: true })
+  assert.match(html, /<div id="m" role="group" aria-labelledby="m-label" class="fs-matrix is-invalid" style="--fs-matrix-columns:3"/)
+  assert.match(html, /<div class="fs-matrix-head" aria-hidden="true"><span><\/span><span>พอใจมาก<\/span><span>พอใจ<\/span><span>ไม่พอใจ<\/span><\/div>/)
+  assert.equal(html.match(/role="radiogroup"/g).length, 2)
+  assert.match(html, /role="radiogroup" aria-labelledby="m-0-label" aria-required="true" class="fs-matrix-row"/)
+  assert.match(html, /role="radiogroup" aria-labelledby="m-1-label" aria-required="true" aria-invalid="true" class="fs-matrix-row is-missing"/)
+  assert.match(html, /id="m-0-1" role="radio" aria-checked="true" aria-label="พอใจ" tabindex="0"/)
+  assert.match(html, /id="m-1-0" role="radio" aria-checked="false" aria-label="พอใจมาก" tabindex="0"/)
+  assert.match(html, /<div id="m-error" class="invalid-feedback d-block">กรุณาตอบให้ครบทุกข้อ \(ขาด 1 ข้อ\)<\/div>/)
+  assert.doesNotMatch(html, /<table|type="radio"/)
+  const multi = render([matrix({ multiple: true, readonly: true })], matrixData)
+  assert.equal(multi.match(/role="checkbox"/g).length, 6)
+  assert.match(multi, /class="fs-matrix is-readonly"/)
+  assert.match(multi, /aria-readonly="true"/)
+})
+
+test('demo editor adds a matrix with one data key per row and removes them together', () => {
+  const added = editor.addControl(demoForm(), demoData(), {
+    type: 'matrix', label: 'บริการ', required: true, options: ['ดี', 'แย่'], rows: ['สะอาด', 'ราคา'], cell: { colno: 1, rowno: 0 },
+  })
+  assert.equal(added.id, 'matrix_1')
+  assert.deepEqual(editor.findGrid(added.form).grid.controls.at(-1).rows, [
+    { label: 'สะอาด', databinding: 'matrix_1_1' }, { label: 'ราคา', databinding: 'matrix_1_2' },
+  ])
+  assert.deepEqual(added.data.matrix_1_2, { type: 'number', is_array: 1, options: ['ดี', 'แย่'], value: [0, 0] })
+  assert.throws(() => editor.addControl(demoForm(), demoData(), { type: 'matrix', label: 'x', required: false, options: ['a'], rows: [], cell: { colno: 1, rowno: 0 } }), /at least one row/)
+  const path = editor.listControls(added.form).find((item) => item.control.id === 'matrix_1').path
+  const removed = editor.removeControl(added.form, added.data, path)
+  assert.deepEqual(Object.keys(removed.data), ['fname', 'hobby'])
 })

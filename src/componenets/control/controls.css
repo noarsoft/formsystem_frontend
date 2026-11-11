@@ -271,3 +271,102 @@
   gap: 1rem;
   margin-top: 0.25rem;
 }
+
+/* Matrix: a grid on wide boxes, one question at a time when the control is narrow. */
+.fs-matrix {
+  container-type: inline-size;
+  --fs-matrix-template: minmax(7rem, 2fr) repeat(var(--fs-matrix-columns), minmax(3.5rem, 1fr));
+}
+
+.fs-matrix-head,
+.fs-matrix-row {
+  display: grid;
+  grid-template-columns: var(--fs-matrix-template);
+  align-items: center;
+  column-gap: 0.5rem;
+}
+
+.fs-matrix-head {
+  padding-bottom: 0.25rem;
+  border-bottom: var(--bs-border-width) solid var(--cb-line-gray);
+  font-size: 0.875em;
+  color: var(--cb-muted-text);
+  text-align: center;
+}
+
+.fs-matrix-row {
+  padding: 0.5rem 0;
+  border-bottom: var(--bs-border-width) solid var(--cb-line-gray);
+}
+
+.fs-matrix-cell {
+  justify-content: center;
+}
+
+.fs-matrix-cell-text {
+  display: none;
+}
+
+.fs-matrix-row.is-missing .fs-matrix-question {
+  color: var(--bs-form-invalid-color);
+}
+
+.fs-matrix-row.is-missing .fs-mark {
+  border-color: var(--bs-form-invalid-border-color);
+}
+
+.fs-matrix.is-readonly .fs-choice-item {
+  cursor: default;
+}
+
+.fs-matrix.is-disabled .fs-choice-item {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Narrow: up to 4 columns fit down to ~24rem; 5 or more need ~36rem. */
+@container (max-width: 24rem) {
+  .fs-matrix-head {
+    display: none;
+  }
+
+  .fs-matrix-row {
+    display: block;
+  }
+
+  .fs-matrix-question {
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+  }
+
+  .fs-matrix-cell {
+    justify-content: flex-start;
+  }
+
+  .fs-matrix-cell-text {
+    display: inline;
+  }
+}
+
+@container (max-width: 36rem) {
+  .fs-matrix.is-many .fs-matrix-head {
+    display: none;
+  }
+
+  .fs-matrix.is-many .fs-matrix-row {
+    display: block;
+  }
+
+  .fs-matrix.is-many .fs-matrix-question {
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+  }
+
+  .fs-matrix.is-many .fs-matrix-cell {
+    justify-content: flex-start;
+  }
+
+  .fs-matrix.is-many .fs-matrix-cell-text {
+    display: inline;
+  }
+}
