@@ -1,0 +1,45 @@
+{
+    "controls":[
+        {
+            "id": "grid1",
+            "type":"grid",
+            "columns": 3,
+            "rows": 2,
+            "controls":[
+                {
+                    "type": "flex",
+                    "is_horizontal": 0,
+                    "colno": 0,
+                    "rowno": 0,
+                    "controls": []
+                },
+                {
+                    "id": "flex1",
+                    "type": "flex",
+                    "is_horizontal": 1,
+                    "colno": 2,
+                    "rowno": 1,
+                    "controls": [
+                        {
+                            "type": "textbox",
+                            "id": "textbox1",
+                            "label": "Textbox 1",
+                            "databinding": "fname",
+                            "placeholder": "Enter text here",
+                            "value": ""
+                        },
+                        {
+                            "type": "checkbox_group",
+                            "id": "hobby",
+                            "label": "Hobby",
+                            "databinding": "hobby"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+    
+
+
+}
