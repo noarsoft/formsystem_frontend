@@ -140,6 +140,14 @@ export default function ControlDocument() {
         ตรวจตามลำดับ ห้ามว่าง → ความยาว → รูปแบบ แล้วแสดงข้อความแรกที่ไม่ผ่าน ค่าว่างที่ไม่ required ถือว่าผ่าน
       </p>
 
+      <h3 className="h4 mt-4">disabled กับ readonly</h3>
+      <p>
+        ทั้งสองแก้ค่าไม่ได้ และ<strong>ไม่ถูกตรวจ</strong> (required/รูปแบบ) เพราะผู้ใช้แก้ไม่ได้อยู่แล้ว ต่างกันที่
+        <code>disabled</code> = สีจาง กด/โฟกัสไม่ได้ ("ตอนนี้ใช้ไม่ได้") ส่วน <code>readonly</code> = หน้าตาปกติ
+        โฟกัส/คัดลอกได้ ("ดูได้แต่แก้ไม่ได้") ช่องวันที่/เวลาแบบ readonly จะซ่อนปุ่ม 📅 ใส่ทีละช่องได้ หรือทั้งฟอร์มด้วย{' '}
+        <code>{'<FormBuilder readonly />'}</code> (เช่น หน้าเจ้าหน้าที่ดูใบสมัคร) ซึ่งจะไม่แสดงข้อความเตือนด้วย
+      </p>
+
       <VisibleIfSection />
 
       <h3 className="h4 mt-4">Properties ที่ทุก control ใช้ร่วมกัน</h3>

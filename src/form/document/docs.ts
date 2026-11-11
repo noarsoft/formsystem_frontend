@@ -40,6 +40,20 @@ const textRuleProps: PropDoc[] = [
   { name: 'pattern_message', type: 'string', description: 'ข้อความแทนข้อความเตือนของ format และ pattern' },
 ]
 
+const readonlyProp: PropDoc = {
+  name: 'readonly',
+  type: 'boolean',
+  default: 'false',
+  description: 'อ่านอย่างเดียว: หน้าตาปกติ โฟกัส/คัดลอกได้ แต่แก้ไม่ได้ และไม่ถูกตรวจ (ช่องวันที่/เวลาซ่อนปุ่ม)',
+}
+
+const disabledChoiceProp: PropDoc = {
+  name: 'disabled',
+  type: 'boolean',
+  default: 'false',
+  description: 'ปิดการใช้งาน: สีจาง กด/โฟกัสไม่ได้ และไม่ถูกตรวจ',
+}
+
 const requiredProps: PropDoc[] = [
   {
     name: 'required',
@@ -50,6 +64,7 @@ const requiredProps: PropDoc[] = [
       'หลังผู้ใช้แก้ช่องนั้น หรือเมื่อ FormBuilder ได้ showErrors และมี * หลัง label',
   },
   { name: 'required_message', type: 'string', description: 'ข้อความแจ้งเตือนแทนข้อความมาตรฐาน' },
+  readonlyProp,
 ]
 
 export const commonProps: PropDoc[] = [
@@ -93,6 +108,7 @@ export const controlDocs: ControlDoc[] = [
     ],
     examples: [
       { type: 'textbox', id: 'ex_textbox', label: 'ชื่อ', placeholder: 'กรอกชื่อ', value: 'piyavach' },
+      { type: 'textbox', id: 'ex_textbox_readonly', label: 'รหัสนักศึกษา (readonly)', value: '650610001', readonly: true },
       { type: 'textbox', id: 'ex_textbox_bound', label: 'ชื่อ (bind กับ fname)', databinding: 'fname', value: 'ถูก data override' },
       {
         type: 'textbox', id: 'ex_textbox_required', label: 'อีเมล (required — ลบข้อความออกเพื่อดูข้อความแจ้งเตือน)',
@@ -194,6 +210,7 @@ export const controlDocs: ControlDoc[] = [
         description: 'ต้องเลือกครบทั้ง 2 ฝั่ง ถ้าขาดฝั่งใดจะแสดง "กรุณาเลือกช่วงวันที่ให้ครบ"',
       },
       { name: 'required_message', type: 'string', description: 'ข้อความแจ้งเตือนแทนข้อความมาตรฐาน (เฉพาะกรณีเลือกไม่ครบ)' },
+      readonlyProp,
       {
         name: 'databinding_from',
         type: 'string',
@@ -315,6 +332,7 @@ export const controlDocs: ControlDoc[] = [
         description: 'สวิตช์ต้องเปิด (เช่น ต้องยินยอมก่อนส่ง) ถ้าปิดอยู่จะแสดงข้อความแจ้งเตือนสีแดง',
       },
       { name: 'required_message', type: 'string', default: "'กรุณาเปิดตัวเลือกนี้'", description: 'ข้อความแจ้งเตือนแทนข้อความมาตรฐาน' },
+      readonlyProp,
       {
         name: 'databinding',
         type: 'string',
@@ -354,11 +372,13 @@ export const controlDocs: ControlDoc[] = [
       { name: 'options', type: 'string[]', description: 'ข้อความของแต่ละตัวเลือก (บังคับ ยกเว้นเมื่อ data มี options)' },
       { name: 'value', type: 'number[]', default: 'ศูนย์ทุกตัว', description: 'อาร์เรย์ 0/1 ความยาวเท่ากับ options' },
       { name: 'multiple', type: 'boolean', default: 'false', description: 'เลือกได้หลายตัว' },
+      disabledChoiceProp,
       ...requiredProps,
       bindingProp,
     ],
     examples: [
       { type: 'dropdown', id: 'ex_dropdown_single', label: 'เพศ', options: ['ชาย', 'หญิง'], value: [0, 1] },
+      { type: 'dropdown', id: 'ex_dropdown_disabled', label: 'สาขา (disabled)', options: ['วิศวะ', 'บัญชี'], value: [1, 0], disabled: true },
       {
         type: 'dropdown', id: 'ex_dropdown_multi', label: 'ทักษะ (bind กับ skill)', multiple: true,
         databinding: 'skill',
@@ -377,6 +397,7 @@ export const controlDocs: ControlDoc[] = [
       { name: 'options', type: 'string[]', description: 'ข้อความของแต่ละตัวเลือก (บังคับ ยกเว้นเมื่อ data มี options)' },
       { name: 'value', type: 'number[]', default: 'ศูนย์ทุกตัว', description: 'อาร์เรย์ 0/1 ความยาวเท่ากับ options' },
       { name: 'inline', type: 'boolean', default: 'false', description: 'วางตัวเลือกเรียงในแนวนอน' },
+      disabledChoiceProp,
       ...requiredProps,
       bindingProp,
     ],
@@ -402,6 +423,7 @@ export const controlDocs: ControlDoc[] = [
       { name: 'options', type: 'string[]', description: 'ข้อความของแต่ละตัวเลือก (บังคับ ยกเว้นเมื่อ data มี options)' },
       { name: 'value', type: 'number[]', default: 'ศูนย์ทุกตัว', description: 'อาร์เรย์ 0/1 ความยาวเท่ากับ options มี 1 ได้ไม่เกิน 1 ตัว' },
       { name: 'inline', type: 'boolean', default: 'false', description: 'วางตัวเลือกเรียงในแนวนอน' },
+      disabledChoiceProp,
       ...requiredProps,
       bindingProp,
     ],
@@ -409,6 +431,10 @@ export const controlDocs: ControlDoc[] = [
       {
         type: 'option', id: 'ex_option', label: 'ระดับการศึกษา', inline: true,
         options: ['ปริญญาตรี', 'ปริญญาโท', 'ปริญญาเอก'], value: [1, 0, 0],
+      },
+      {
+        type: 'option', id: 'ex_option_readonly', label: 'สถานะ (readonly)', inline: true,
+        options: ['รออนุมัติ', 'อนุมัติ'], value: [0, 1], readonly: true,
       },
     ],
   },

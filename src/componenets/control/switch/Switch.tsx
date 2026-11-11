@@ -14,6 +14,8 @@ interface SwitchProps {
   // 1 = on, 0 = off.
   value: 0 | 1
   disabled?: boolean
+  // View only: can be focused and copied, not changed.
+  readOnly?: boolean
   required?: boolean
   error?: string
   style?: ComponentStyle
@@ -22,11 +24,11 @@ interface SwitchProps {
 
 // A div-based on/off switch (role="switch") so it can be styled freely, like the other choices.
 export default function Switch({
-  id, label, text, value, disabled, required, error, style, onChange,
+  id, label, text, value, disabled, readOnly, required, error, style, onChange,
 }: SwitchProps) {
   const checked = value === 1
   const toggle = () => {
-    if (!disabled) onChange(checked ? 0 : 1)
+    if (!disabled && !readOnly) onChange(checked ? 0 : 1)
   }
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === ' ' || event.key === 'Enter') {
@@ -39,6 +41,7 @@ export default function Switch({
     'fs-switch',
     checked && 'is-checked',
     disabled && 'is-disabled',
+    readOnly && 'is-readonly',
     error && 'is-invalid',
   ].filter(Boolean).join(' ')
 
@@ -50,6 +53,7 @@ export default function Switch({
         role="switch"
         aria-checked={checked}
         aria-disabled={disabled || undefined}
+        aria-readonly={readOnly || undefined}
         aria-labelledby={labelledBy || undefined}
         tabIndex={disabled ? -1 : 0}
         className={classes}

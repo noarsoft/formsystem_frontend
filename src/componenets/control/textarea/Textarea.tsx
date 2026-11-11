@@ -9,6 +9,8 @@ interface TextareaProps {
   placeholder?: string
   rows?: number
   disabled?: boolean
+  // View only: can be focused and copied, not changed.
+  readOnly?: boolean
   required?: boolean
   error?: string
   // Stops typing past this many characters and shows a "12/100" counter.
@@ -20,7 +22,7 @@ interface TextareaProps {
 }
 
 export default function Textarea({
-  id, label, value, placeholder, rows = 3, disabled, required, error, maxLength, inputMode, style, onChange,
+  id, label, value, placeholder, rows = 3, disabled, readOnly, required, error, maxLength, inputMode, style, onChange,
 }: TextareaProps) {
   return (
     <Control id={id} label={label} style={style} required={required} error={error}>
@@ -31,6 +33,7 @@ export default function Textarea({
         value={value}
         placeholder={placeholder}
         disabled={disabled}
+        readOnly={readOnly}
         maxLength={maxLength}
         inputMode={inputMode}
         {...invalidProps(id, required, error)}

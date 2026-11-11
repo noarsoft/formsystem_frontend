@@ -12,6 +12,8 @@ interface TextboxProps {
   // 'password' hides the text and adds a "แสดง/ซ่อน" toggle button.
   inputType?: 'text' | 'password' | 'email' | 'number' | 'tel' | 'url'
   disabled?: boolean
+  // View only: can be focused and copied, not changed.
+  readOnly?: boolean
   required?: boolean
   error?: string
   // Stops typing past this many characters and shows a "12/100" counter.
@@ -23,7 +25,8 @@ interface TextboxProps {
 }
 
 export default function Textbox({
-  id, label, value, placeholder, inputType = 'text', disabled, required, error, maxLength, inputMode, style, onChange,
+  id, label, value, placeholder, inputType = 'text', disabled, readOnly, required, error, maxLength, inputMode, style,
+  onChange,
 }: TextboxProps) {
   // Whether a password is currently shown; screen state only, never saved to JSON or data.
   const [visible, setVisible] = useState(false)
@@ -37,6 +40,7 @@ export default function Textbox({
       value={value}
       placeholder={placeholder}
       disabled={disabled}
+      readOnly={readOnly}
       maxLength={maxLength}
       inputMode={inputMode}
       {...invalidProps(id, required, error)}

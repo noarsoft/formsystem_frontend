@@ -10,6 +10,8 @@ interface DateProps {
   value: number | null
   placeholder?: string
   disabled?: boolean
+  // View only: can be focused and copied, not changed.
+  readOnly?: boolean
   required?: boolean
   error?: string
   minYear?: number
@@ -20,7 +22,7 @@ interface DateProps {
 
 // Shows the date as dd/mm/yyyy (พ.ศ.) in a box; the box or the button opens the calendar modal.
 export default function DateField({
-  id, label, value, placeholder = 'วว/ดด/ปปปป', disabled, required, error, minYear, maxYear, style, onChange,
+  id, label, value, placeholder = 'วว/ดด/ปปปป', disabled, readOnly, required, error, minYear, maxYear, style, onChange,
 }: DateProps) {
   const parts = value === null ? null : parseDateNumber(value)
   const range = yearRange(parts?.year, minYear, maxYear)
@@ -33,6 +35,7 @@ export default function DateField({
       placeholder={placeholder}
       icon="📅"
       disabled={disabled}
+      readOnly={readOnly}
       required={required}
       error={error}
       style={style}

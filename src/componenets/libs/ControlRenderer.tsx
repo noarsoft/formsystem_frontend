@@ -26,7 +26,7 @@ import {
 } from './controlValues'
 import type { FieldValue } from './controlValues'
 import { useFormContext } from './formContext'
-import { inputModeFor, numberSettings, validateControl } from './validation'
+import { inputModeFor, isLocked, numberSettings, validateControl } from './validation'
 import { isVisible } from './visibility'
 
 export interface ControlRendererProps {
@@ -52,17 +52,23 @@ function renderChildren(
 
 export default function ControlRenderer({ config, onChange, onAction }: ControlRendererProps) {
   const generatedId = useId()
-  const { data, onDataChange, showErrors } = useFormContext()
+  const { data, onDataChange, showErrors, readonly: formReadonly } = useFormContext()
   // The user has changed this control, so its validation error may be shown.
   const [touched, setTouched] = useState(false)
   const id = config.id ?? generatedId
   // Hidden by visible_if: render nothing (a grid keeps the empty cell). Hooks above stay unconditional.
   if (!isVisible(config, data)) return null
-  const message = validateControl(config, data)
+  // View only, set on the control or on the whole form (<FormBuilder readonly>).
+  const readOnly = formReadonly === true || ('readonly' in config && config.readonly === true)
+  // Locked controls are not validated (validateControl skips them; the form-wide flag is checked here).
+  const message = readOnly ? null : validateControl(config, data)
+  // The red * means "you must fill this in": not shown when the user cannot change it.
+  const required = 'required' in config && config.required === true && !readOnly && !isLocked(config)
   const error = message !== null && (touched || showErrors) ? message : undefined
 
   // Bound controls write to the data; unbound ones keep their value inline.
   const commit = (value: FieldValue) => {
+    if (readOnly) return
     setTouched(true)
     if ('databinding' in config && config.databinding !== undefined) {
       onDataChange?.(updateData(data, config.databinding, value))
@@ -76,10 +82,11 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       return (
         <Textbox
           id={id}
+          readOnly={readOnly}
           maxLength={config.max_length}
           inputMode={inputModeFor(config.format)}
           label={config.label}
-          required={config.required}
+          required={required}
           error={error}
           style={config.style}
           value={getTextValue(config, data)}
@@ -94,8 +101,9 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       return (
         <DateField
           id={id}
+          readOnly={readOnly}
           label={config.label}
-          required={config.required}
+          required={required}
           error={error}
           style={config.style}
           value={getDateValue(config, data)}
@@ -111,8 +119,9 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       return (
         <NumberField
           id={id}
+          readOnly={readOnly}
           label={config.label}
-          required={config.required}
+          required={required}
           error={error}
           style={config.style}
           value={getNumberFieldValue(config, data)}
@@ -130,8 +139,9 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       return (
         <DateRangeField
           id={id}
+          readOnly={readOnly}
           label={config.label}
-          required={config.required}
+          required={required}
           error={error}
           style={config.style}
           value={getDateRangeValue(config, data)}
@@ -141,6 +151,7 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
           maxYear={config.max_year}
           onChange={(end, value) => {
             // Each end is written on its own: to its data key, or to value_from / value_to.
+            if (readOnly) return
             setTouched(true)
             if (bindings) onDataChange?.(updateData(data, bindings[end], value))
             else onChange({ ...config, [end === 'from' ? 'value_from' : 'value_to']: value })
@@ -153,8 +164,9 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       return (
         <TimeField
           id={id}
+          readOnly={readOnly}
           label={config.label}
-          required={config.required}
+          required={required}
           error={error}
           style={config.style}
           value={getTimeValue(config, data)}
@@ -169,8 +181,9 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       return (
         <DateTimeField
           id={id}
+          readOnly={readOnly}
           label={config.label}
-          required={config.required}
+          required={required}
           error={error}
           style={config.style}
           value={getDateTimeValue(config, data)}
@@ -187,10 +200,11 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       return (
         <Textarea
           id={id}
+          readOnly={readOnly}
           maxLength={config.max_length}
           inputMode={inputModeFor(config.format)}
           label={config.label}
-          required={config.required}
+          required={required}
           error={error}
           style={config.style}
           value={getTextValue(config, data)}
@@ -205,8 +219,9 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       return (
         <Switch
           id={id}
+          readOnly={readOnly}
           label={config.label}
-          required={config.required}
+          required={required}
           error={error}
           style={config.style}
           text={config.text}
@@ -224,8 +239,10 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       return (
         <Dropdown
           id={id}
+          readOnly={readOnly}
+          disabled={config.disabled}
           label={config.label}
-          required={config.required}
+          required={required}
           error={error}
           style={config.style}
           options={options}
@@ -241,8 +258,10 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       return (
         <CheckboxGroup
           id={id}
+          readOnly={readOnly}
+          disabled={config.disabled}
           label={config.label}
-          required={config.required}
+          required={required}
           error={error}
           style={config.style}
           options={options}
@@ -258,8 +277,10 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       return (
         <Option
           id={id}
+          readOnly={readOnly}
+          disabled={config.disabled}
           label={config.label}
-          required={config.required}
+          required={required}
           error={error}
           style={config.style}
           options={options}

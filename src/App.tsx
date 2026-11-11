@@ -6,6 +6,7 @@ import controlsJson from './assets/controls.json'
 import dataJson from './assets/data.json'
 import ControlDocument from './form/document'
 import DemoEditor from './demo/DemoEditor'
+import Switch from './componenets/control/switch/Switch'
 import './App.css'
 
 const initialForm = controlsJson as FormDocument
@@ -17,6 +18,8 @@ function App() {
   const [page, setPage] = useState<'demo' | 'document'>('demo')
   // Set by the submit button: from then on every validation error is shown.
   const [submitted, setSubmitted] = useState(false)
+  // View the whole form read-only (like staff reviewing a submitted form).
+  const [readonly, setReadonly] = useState(false)
   const errors = validateForm(form, data)
 
   return (
@@ -36,7 +39,21 @@ function App() {
 
       {page === 'demo' ? (
         <>
-          <FormBuilder form={form} onChange={setForm} data={data} onDataChange={setData} showErrors={submitted} />
+          <Switch
+            id="demo_readonly"
+            text="ดูแบบอ่านอย่างเดียว (readonly ทั้งฟอร์ม)"
+            value={readonly ? 1 : 0}
+            style={{ margin: '0 0 1rem' }}
+            onChange={(value) => setReadonly(value === 1)}
+          />
+          <FormBuilder
+            form={form}
+            onChange={setForm}
+            data={data}
+            onDataChange={setData}
+            showErrors={submitted}
+            readonly={readonly}
+          />
           <button type="button" className="btn btn-primary mt-3" onClick={() => setSubmitted(true)}>
             ส่งข้อมูล
           </button>

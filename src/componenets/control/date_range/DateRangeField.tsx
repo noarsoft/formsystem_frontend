@@ -12,6 +12,8 @@ interface DateRangeFieldProps {
   value: DateRange
   placeholder?: string
   disabled?: boolean
+  // View only: can be focused and copied, not changed.
+  readOnly?: boolean
   required?: boolean
   error?: string
   minYear?: number
@@ -22,7 +24,7 @@ interface DateRangeFieldProps {
 
 // Two date boxes, "ตั้งแต่ … ถึง …", under one label with one validation message.
 export default function DateRangeField({
-  id, label, value, placeholder = 'วว/ดด/ปปปป', disabled, required, error, minYear, maxYear, style, onChange,
+  id, label, value, placeholder = 'วว/ดด/ปปปป', disabled, readOnly, required, error, minYear, maxYear, style, onChange,
 }: DateRangeFieldProps) {
   // With an error, mark the empty end(s); if both are filled (end before start), mark both.
   const bothFilled = value.from !== null && value.to !== null
@@ -40,6 +42,7 @@ export default function DateRangeField({
           placeholder={placeholder}
           icon="📅"
           disabled={disabled}
+          readOnly={readOnly}
           ariaLabel={`${label ? `${label} ` : ''}${text}`}
           invalid={invalid(current)}
           describedBy={error ? `${id}-error` : undefined}

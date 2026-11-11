@@ -13,6 +13,10 @@ interface DropdownProps {
   multiple?: boolean
   // Single mode only: show the "-- เลือก --" entry that clears the selection.
   clearable?: boolean
+  // Greyed out, not focusable, does not open.
+  disabled?: boolean
+  // Focusable, does not open (view only).
+  readOnly?: boolean
   required?: boolean
   error?: string
   style?: ComponentStyle
@@ -29,7 +33,7 @@ const placeholder = '-- เลือก --'
 
 // A div-based combobox/listbox so the whole design can be styled freely.
 export default function Dropdown({
-  id, label, options, value, multiple = false, clearable = true, required, error, style, onChange,
+  id, label, options, value, multiple = false, clearable = true, disabled, readOnly, required, error, style, onChange,
 }: DropdownProps) {
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
@@ -60,7 +64,9 @@ export default function Dropdown({
     }
   }, [open, active, id])
 
+  const locked = disabled || readOnly
   const openMenu = () => {
+    if (locked) return
     scrollToActive.current = true
     setActive(Math.max(entries.findIndex(isSelected), 0))
     setOpen(true)
@@ -76,6 +82,7 @@ export default function Dropdown({
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (locked) return
     switch (event.key) {
       case 'ArrowDown':
       case 'ArrowUp': {
@@ -109,10 +116,12 @@ export default function Dropdown({
         <div
           id={id}
           role="combobox"
-          tabIndex={0}
-          className={`form-select fs-dropdown-toggle${error ? ' is-invalid' : ''}`}
+          tabIndex={disabled ? -1 : 0}
+          className={`form-select fs-dropdown-toggle${disabled ? ' is-disabled' : ''}${readOnly ? ' is-readonly' : ''}${error ? ' is-invalid' : ''}`}
           aria-haspopup="listbox"
           aria-expanded={open}
+          aria-disabled={disabled || undefined}
+          aria-readonly={readOnly || undefined}
           aria-controls={`${id}-list`}
           aria-labelledby={label ? `${id}-label` : undefined}
           aria-activedescendant={open ? `${id}-opt-${active}` : undefined}

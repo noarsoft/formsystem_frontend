@@ -1047,3 +1047,80 @@ test('demo editor keeps data keys still read by another control\'s visible_if', 
   // Removing the dependent control too lets the key go.
   assert.deepEqual(Object.keys(editor.removeControl(removed.form, removed.data, [0]).data), [])
 })
+
+// ---- disabled / readonly ----
+
+test('disabled and readonly controls are not validated', () => {
+  for (const lock of [{ disabled: true }, { readonly: true }]) {
+    for (const config of [
+      { type: 'textbox', id: 't', required: true, format: 'email', value: 'x' },
+      { type: 'number', id: 'n', required: true, min: 5, value: 1 },
+      { type: 'date', id: 'd', required: true },
+      { type: 'date_range', id: 'r', value_from: 25681120, value_to: 25681118 },
+      { type: 'option', id: 'o', required: true, options: ['a', 'b'] },
+      { type: 'switch', id: 's', required: true },
+    ]) {
+      assert.notEqual(validation.validateControl(config), null, `${config.type} unlocked`)
+      assert.equal(validation.validateControl({ ...config, ...lock }), null, `${config.type} ${JSON.stringify(lock)}`)
+    }
+  }
+  assert.equal(validation.isLocked({ type: 'textbox', disabled: false }), false)
+  // No red * on a required control the user cannot change.
+  for (const lock of [{ disabled: true }, { readonly: true }]) {
+    assert.doesNotMatch(render([{ type: 'textbox', id: 't', label: 'L', required: true, ...lock }]), /text-danger/)
+  }
+  assert.match(render([{ type: 'textbox', id: 't', label: 'L', required: true }]), /text-danger/)
+})
+
+test('readonly renders each control view-only', () => {
+  const html = render([
+    { type: 'textbox', id: 't', value: 'x', readonly: true },
+    { type: 'textarea', id: 'ta', value: 'x', readonly: true },
+    { type: 'number', id: 'n', value: 5, readonly: true },
+    { type: 'date', id: 'd', value: 25681118, readonly: true },
+    { type: 'date_range', id: 'r', value_from: 25681118, value_to: 25681120, readonly: true },
+    { type: 'dropdown', id: 'dd', options: ['a', 'b'], value: [1, 0], readonly: true },
+    { type: 'checkbox_group', id: 'cb', options: ['a'], value: [1], readonly: true },
+    { type: 'switch', id: 'sw', value: 1, readonly: true },
+  ])
+  assert.match(html, /<input id="t" class="form-control" type="text" readOnly=""/)
+  assert.match(html, /<textarea id="ta"[^>]*readOnly=""/)
+  assert.match(html, /<input id="n"[^>]*readOnly=""/)
+  // Pickers: no button, no popup.
+  assert.doesNotMatch(html, /📅/)
+  assert.match(html, /id="d" role="combobox" tabindex="0"[^>]*cursor:default/)
+  assert.doesNotMatch(html, /id="d"[^>]*aria-haspopup/)
+  assert.match(html, /id="r-from"[^>]*>18\/11\/2568</)
+  assert.match(html, /id="dd" role="combobox" tabindex="0" class="form-select fs-dropdown-toggle is-readonly"[^>]*aria-readonly="true"/)
+  assert.match(html, /class="fs-choice-list is-readonly"/)
+  assert.match(html, /id="cb-0" role="checkbox" aria-checked="true" aria-readonly="true"/)
+  assert.match(html, /id="sw" role="switch" aria-checked="true" aria-readonly="true"[^>]*tabindex="0" class="fs-switch is-checked is-readonly"/)
+  assert.doesNotMatch(html, /disabled/)
+})
+
+test('disabled choice controls are greyed out and not focusable', () => {
+  const html = render([
+    { type: 'dropdown', id: 'dd', options: ['a', 'b'], value: [1, 0], disabled: true },
+    { type: 'option', id: 'op', options: ['a', 'b'], value: [0, 1], disabled: true },
+    { type: 'checkbox_group', id: 'cb', options: ['a'], value: [0], disabled: true },
+  ])
+  assert.match(html, /id="dd" role="combobox" tabindex="-1" class="form-select fs-dropdown-toggle is-disabled"[^>]*aria-disabled="true"/)
+  assert.match(html, /class="fs-choice-list is-disabled"/)
+  assert.match(html, /id="op-1" role="radio" aria-checked="true" aria-disabled="true"[^>]*tabindex="-1"/)
+  assert.match(html, /id="cb-0" role="checkbox" aria-checked="false" aria-disabled="true"[^>]*tabindex="-1"/)
+  assert.doesNotMatch(html, /tabindex="0"/)
+})
+
+test('FormBuilder readonly makes every input view-only and hides errors', () => {
+  const controls = [
+    { type: 'textbox', id: 't', required: true, value: '' },
+    { type: 'card', controls: [{ type: 'option', id: 'o', required: true, options: ['a', 'b'] }] },
+    { type: 'time', id: 'tm', required: true },
+  ]
+  const html = render(controls, undefined, { readonly: true, showErrors: true })
+  assert.match(html, /id="t"[^>]*readOnly=""/)
+  assert.match(html, /id="o-0" role="radio"[^>]*aria-readonly="true"/)
+  assert.doesNotMatch(html, /🕒|invalid|aria-required/)
+  // Without the flag the same form shows its errors.
+  assert.equal(render(controls, undefined, { showErrors: true }).match(/invalid-feedback/g).length, 3)
+})

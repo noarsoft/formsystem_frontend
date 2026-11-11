@@ -143,5 +143,12 @@ children are not rendered (a grid keeps the empty cell), are skipped by
 `validateForm`, and keep their data. An unknown key or a condition without
 exactly one operator throws. See the live example in the Document tab.
 
+Every input control accepts `disabled` (greyed out, cannot be focused or
+changed) and `readonly` (normal look, can be focused and copied, cannot be
+changed; date/time pickers hide their button). Both are skipped by validation,
+since the user cannot fix them. `<FormBuilder readonly />` makes every input
+view-only and shows no validation messages, e.g. for staff reviewing a
+submitted form (the Demo tab has a switch for it).
+
 `style` (on any control) accepts `padding`, `margin`, `font_size`, `color`, and
 `border`; `front_size` and `boarder` are accepted as aliases.

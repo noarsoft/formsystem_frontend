@@ -31,13 +31,18 @@ interface BaseControl {
   style?: ComponentStyle
 }
 
-// Validation for controls that take input. See libs/validation.ts.
-interface RequiredRule {
+// Shared by every control that takes input.
+interface InputRules {
   // true = the value must not be empty ('' / whitespace, null date/time, or no option selected);
   // for a switch it must be on.
   required?: boolean
   // Shown under the control instead of the default message.
   required_message?: string
+  // Greyed out and cannot be changed or focused ("not usable now").
+  disabled?: boolean
+  // Looks normal and can be focused / copied, but cannot be changed ("view only").
+  // Disabled and readonly controls are not validated: the user could not fix them.
+  readonly?: boolean
 }
 
 // Ready-made formats for text: see TEXT_FORMATS in libs/validation.ts.
@@ -57,7 +62,7 @@ interface TextRules {
   pattern_message?: string
 }
 
-export type TextboxConfig = BaseControl & RequiredRule & TextRules & {
+export type TextboxConfig = BaseControl & InputRules & TextRules & {
   type: 'textbox'
   label?: string
   value?: string
@@ -68,7 +73,7 @@ export type TextboxConfig = BaseControl & RequiredRule & TextRules & {
   disabled?: boolean
 }
 
-export type DateConfig = BaseControl & RequiredRule & {
+export type DateConfig = BaseControl & InputRules & {
   type: 'date'
   label?: string
   // YYYYMMDD in Buddhist Era (25681118 = 18/11/2568); null or missing = empty.
@@ -83,7 +88,7 @@ export type DateConfig = BaseControl & RequiredRule & {
 
 // Two dates ("ตั้งแต่" / "ถึง"), each a YYYYMMDD Buddhist-era number or null.
 // Bind both ends with databinding_from + databinding_to, or neither.
-export type DateRangeConfig = BaseControl & RequiredRule & {
+export type DateRangeConfig = BaseControl & InputRules & {
   type: 'date_range'
   label?: string
   value_from?: number | null
@@ -96,7 +101,7 @@ export type DateRangeConfig = BaseControl & RequiredRule & {
   max_year?: number
 }
 
-export type NumberConfig = BaseControl & RequiredRule & {
+export type NumberConfig = BaseControl & InputRules & {
   type: 'number'
   label?: string
   // A real number; null or missing = empty (0 is a value).
@@ -114,7 +119,7 @@ export type NumberConfig = BaseControl & RequiredRule & {
   max_message?: string
 }
 
-export type TimeConfig = BaseControl & RequiredRule & {
+export type TimeConfig = BaseControl & InputRules & {
   type: 'time'
   label?: string
   // HHMM (1430 = 14:30, 0 = 00:00); null or missing = empty.
@@ -126,7 +131,7 @@ export type TimeConfig = BaseControl & RequiredRule & {
   minute_step?: number
 }
 
-export type DateTimeConfig = BaseControl & RequiredRule & {
+export type DateTimeConfig = BaseControl & InputRules & {
   type: 'datetime'
   label?: string
   // YYYYMMDDHHMM in Buddhist Era (256811181430 = 18/11/2568 14:30); null or missing = empty.
@@ -139,7 +144,7 @@ export type DateTimeConfig = BaseControl & RequiredRule & {
   minute_step?: number
 }
 
-export type TextareaConfig = BaseControl & RequiredRule & TextRules & {
+export type TextareaConfig = BaseControl & InputRules & TextRules & {
   type: 'textarea'
   label?: string
   value?: string
@@ -149,7 +154,7 @@ export type TextareaConfig = BaseControl & RequiredRule & TextRules & {
   disabled?: boolean
 }
 
-export type SwitchConfig = BaseControl & RequiredRule & {
+export type SwitchConfig = BaseControl & InputRules & {
   type: 'switch'
   // Heading above the switch.
   label?: string
@@ -167,7 +172,7 @@ export type LabelConfig = BaseControl & {
   for?: string
 }
 
-export type DropdownConfig = BaseControl & RequiredRule & {
+export type DropdownConfig = BaseControl & InputRules & {
   type: 'dropdown'
   label?: string
   options?: string[]
@@ -176,7 +181,7 @@ export type DropdownConfig = BaseControl & RequiredRule & {
   multiple?: boolean
 }
 
-export type CheckboxGroupConfig = BaseControl & RequiredRule & {
+export type CheckboxGroupConfig = BaseControl & InputRules & {
   type: 'checkbox_group'
   label?: string
   options?: string[]
@@ -185,7 +190,7 @@ export type CheckboxGroupConfig = BaseControl & RequiredRule & {
   inline?: boolean
 }
 
-export type OptionConfig = BaseControl & RequiredRule & {
+export type OptionConfig = BaseControl & InputRules & {
   type: 'option'
   label?: string
   options?: string[]

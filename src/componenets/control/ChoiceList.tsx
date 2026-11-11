@@ -12,6 +12,10 @@ interface ChoiceListProps {
   value: number[]
   kind: 'checkbox' | 'radio'
   inline?: boolean
+  // Greyed out, not focusable, cannot be changed.
+  disabled?: boolean
+  // Focusable, cannot be changed (view only).
+  readOnly?: boolean
   required?: boolean
   error?: string
   style?: ComponentStyle
@@ -20,17 +24,21 @@ interface ChoiceListProps {
 
 // Shared by checkbox_group (kind 'checkbox') and option (kind 'radio').
 export default function ChoiceList({
-  id, label, options, value, kind, inline = false, required, error, style, onToggle,
+  id, label, options, value, kind, inline = false, disabled, readOnly, required, error, style, onToggle,
 }: ChoiceListProps) {
   const checkedIndex = value.indexOf(1)
+  const locked = disabled || readOnly
+  const toggle = (index: number) => {
+    if (!locked) onToggle(index)
+  }
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>, index: number) => {
     if (event.key === ' ' || event.key === 'Enter') {
       event.preventDefault()
-      onToggle(index)
+      toggle(index)
       return
     }
-    if (kind !== 'radio') return
+    if (kind !== 'radio' || locked) return
     const step = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1
       : event.key === 'ArrowUp' || event.key === 'ArrowLeft' ? -1 : 0
     if (step === 0) return
@@ -46,22 +54,24 @@ export default function ChoiceList({
       <div
         role={kind === 'radio' ? 'radiogroup' : 'group'}
         aria-labelledby={label ? `${id}-label` : undefined}
-        className={`fs-choice-list${inline ? ' is-inline' : ''}${error ? ' is-invalid' : ''}`}
+        className={`fs-choice-list${inline ? ' is-inline' : ''}${disabled ? ' is-disabled' : ''}${readOnly ? ' is-readonly' : ''}${error ? ' is-invalid' : ''}`}
         {...invalidProps(id, kind === 'radio' ? required : undefined, error)}
       >
         {options.map((option, index) => {
           const checked = value[index] === 1
-          const tabbable = kind === 'checkbox' || (checkedIndex === -1 ? index === 0 : checked)
+          const tabbable = !disabled && (kind === 'checkbox' || (checkedIndex === -1 ? index === 0 : checked))
           return (
             <div
               key={index}
               id={`${id}-${index}`}
               role={kind}
               aria-checked={checked}
+              aria-disabled={disabled || undefined}
+              aria-readonly={readOnly || undefined}
               aria-labelledby={`${id}-${index}-text`}
               tabIndex={tabbable ? 0 : -1}
               className={`fs-choice-item fs-${kind}${checked ? ' is-checked' : ''}`}
-              onClick={() => onToggle(index)}
+              onClick={() => toggle(index)}
               onKeyDown={(event) => onKeyDown(event, index)}
             >
               <span className="fs-mark" aria-hidden="true" />

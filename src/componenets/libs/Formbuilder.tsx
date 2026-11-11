@@ -17,14 +17,16 @@ export interface FormBuilderProps {
   // true = show every validation error (e.g. after a submit attempt); otherwise a control
   // shows its error only after the user changes it. Check the whole form with validateForm().
   showErrors?: boolean
+  // true = every input control is view-only (readonly) and shows no validation errors.
+  readonly?: boolean
   style?: ComponentStyle
 }
 
 export default function FormBuilder({
-  form, onChange, data, onDataChange, onAction, showErrors = false, style,
+  form, onChange, data, onDataChange, onAction, showErrors = false, readonly = false, style,
 }: FormBuilderProps) {
   return (
-    <FormContext value={{ data, onDataChange, showErrors }}>
+    <FormContext value={{ data, onDataChange, showErrors, readonly }}>
       <Container style={style}>
         {form.controls.map((config, index) => (
           <ControlRenderer

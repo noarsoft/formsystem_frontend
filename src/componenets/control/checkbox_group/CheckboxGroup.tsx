@@ -7,6 +7,8 @@ interface CheckboxGroupProps {
   options: string[]
   value: number[]
   inline?: boolean
+  disabled?: boolean
+  readOnly?: boolean
   required?: boolean
   error?: string
   style?: ComponentStyle

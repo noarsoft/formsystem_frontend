@@ -179,9 +179,15 @@ function checkRequired(
   return config.required_message ?? defaultMessage
 }
 
+// Disabled or readonly: the user cannot change it, so it is not validated.
+export function isLocked(config: ControlConfig): boolean {
+  return ('disabled' in config && config.disabled === true) || ('readonly' in config && config.readonly === true)
+}
+
 // The error message for one control (reading bound values from data), or null when it is
 // valid or takes no input. Containers are not walked; use validateForm for that.
 export function validateControl(config: ControlConfig, data?: FormData): string | null {
+  if (isLocked(config)) return null
   switch (config.type) {
     case 'textbox':
     case 'textarea': {

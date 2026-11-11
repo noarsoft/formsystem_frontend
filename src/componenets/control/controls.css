@@ -171,3 +171,20 @@
 .fs-switch:focus-visible .fs-switch-track {
   box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
 }
+
+/* Disabled (greyed, not usable) and readonly (normal look, cannot change) choice controls. */
+.fs-dropdown-toggle.is-disabled {
+  background-color: var(--bs-secondary-bg);
+  cursor: not-allowed;
+}
+
+.fs-dropdown-toggle.is-readonly,
+.fs-choice-list.is-readonly .fs-choice-item,
+.fs-switch.is-readonly {
+  cursor: default;
+}
+
+.fs-choice-list.is-disabled .fs-choice-item {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

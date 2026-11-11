@@ -11,6 +11,8 @@ interface TimeFieldProps {
   placeholder?: string
   minuteStep?: number
   disabled?: boolean
+  // View only: can be focused and copied, not changed.
+  readOnly?: boolean
   required?: boolean
   error?: string
   style?: ComponentStyle
@@ -19,7 +21,7 @@ interface TimeFieldProps {
 
 // Shows the time as HH:mm in a box; the box or the button opens the time picker.
 export default function TimeField({
-  id, label, value, placeholder = 'ชช:นน', minuteStep, disabled, required, error, style, onChange,
+  id, label, value, placeholder = 'ชช:นน', minuteStep, disabled, readOnly, required, error, style, onChange,
 }: TimeFieldProps) {
   return (
     <PickerField
@@ -29,6 +31,7 @@ export default function TimeField({
       placeholder={placeholder}
       icon="🕒"
       disabled={disabled}
+      readOnly={readOnly}
       required={required}
       error={error}
       style={style}

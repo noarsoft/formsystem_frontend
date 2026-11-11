@@ -14,6 +14,8 @@ interface NumberFieldProps {
   allowNegative: boolean
   unit?: string
   disabled?: boolean
+  // View only: can be focused and copied, not changed.
+  readOnly?: boolean
   required?: boolean
   error?: string
   style?: ComponentStyle
@@ -23,7 +25,7 @@ interface NumberFieldProps {
 // A text box (not <input type="number">: no scroll-wheel changes, no "e") that accepts only what
 // can form a number. Shows "1,234.5" when not focused and plain "1234.5" while editing.
 export default function NumberField({
-  id, label, value, placeholder, decimals, allowNegative, unit, disabled, required, error, style, onChange,
+  id, label, value, placeholder, decimals, allowNegative, unit, disabled, readOnly, required, error, style, onChange,
 }: NumberFieldProps) {
   // What is typed while the box has focus; null when not editing.
   const [draft, setDraft] = useState<string | null>(null)
@@ -41,6 +43,7 @@ export default function NumberField({
       value={text}
       placeholder={placeholder}
       disabled={disabled}
+      readOnly={readOnly}
       {...invalidProps(id, required, shown)}
       onFocus={() => setDraft(value === null ? '' : String(value))}
       onBlur={() => setDraft(null)}

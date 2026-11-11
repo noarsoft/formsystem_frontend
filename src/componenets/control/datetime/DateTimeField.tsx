@@ -13,6 +13,8 @@ interface DateTimeFieldProps {
   maxYear?: number
   minuteStep?: number
   disabled?: boolean
+  // View only: can be focused and copied, not changed.
+  readOnly?: boolean
   required?: boolean
   error?: string
   style?: ComponentStyle
@@ -21,7 +23,7 @@ interface DateTimeFieldProps {
 
 // Shows dd/mm/yyyy HH:mm in a box; the picker is the calendar plus hour/minute and "ตกลง".
 export default function DateTimeField({
-  id, label, value, placeholder = 'วว/ดด/ปปปป ชช:นน', minYear, maxYear, minuteStep, disabled, required, error,
+  id, label, value, placeholder = 'วว/ดด/ปปปป ชช:นน', minYear, maxYear, minuteStep, disabled, readOnly, required, error,
   style, onChange,
 }: DateTimeFieldProps) {
   const parts = value === null ? null : parseDateTimeNumber(value)
@@ -35,6 +37,7 @@ export default function DateTimeField({
       placeholder={placeholder}
       icon="📅"
       disabled={disabled}
+      readOnly={readOnly}
       required={required}
       error={error}
       style={style}
