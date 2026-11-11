@@ -1,5 +1,5 @@
 import type {
-  AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DateRangeConfig, DateTimeConfig, DropdownConfig, FormData,
+  AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DateRangeConfig, DateTimeConfig, NumberConfig, DropdownConfig, FormData,
   OptionConfig, SwitchConfig, TextareaConfig, TextboxConfig, TimeConfig,
 } from './controlTypes'
 import { parseDateNumber, parseDateTimeNumber, parseTimeNumber } from './dateValue'
@@ -99,7 +99,7 @@ export function updateData(data: FormData | undefined, key: string, value: Field
 
 // Reads a number-or-null value (date, time, datetime) and checks it with `parse`.
 function getNumberValue(
-  config: DateConfig | TimeConfig | DateTimeConfig,
+  config: DateConfig | TimeConfig | DateTimeConfig | NumberConfig,
   data: FormData | undefined,
   parse: (value: unknown) => unknown,
   format: string,
@@ -149,6 +149,11 @@ export function getDateRangeValue(config: DateRangeConfig, data?: FormData): Dat
     from: end(config.value_from, bindings?.from),
     to: end(config.value_to, bindings?.to),
   }
+}
+
+// Returns the number, or null when empty. Anything but a finite number (e.g. "12") throws.
+export function getNumberFieldValue(config: NumberConfig, data?: FormData): number | null {
+  return getNumberValue(config, data, (value) => typeof value === 'number' && Number.isFinite(value), 'number')
 }
 
 // Returns the HHMM number (1430 = 14:30), or null when the time is empty.

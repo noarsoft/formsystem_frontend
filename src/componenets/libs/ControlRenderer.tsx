@@ -11,6 +11,7 @@ import Option from '../control/option/Option'
 import DateField from '../control/date/date'
 import DateRangeField from '../control/date_range/DateRangeField'
 import DateTimeField from '../control/datetime/DateTimeField'
+import NumberField from '../control/number/NumberField'
 import TimeField from '../control/time/TimeField'
 import Textarea from '../control/textarea/Textarea'
 import Switch from '../control/switch/Switch'
@@ -20,12 +21,13 @@ import Badge from '../custom/badge/Badge'
 import Card from '../custom/card/Card'
 import type { ButtonConfig, ControlConfig } from './controlTypes'
 import {
-  dateRangeBindings, getChoiceState, getDateRangeValue, getDateTimeValue, getDateValue, getSwitchValue, getTextValue, getTimeValue, replaceAt, toggleAccordionItem, toggleChoice,
+  dateRangeBindings, getChoiceState, getDateRangeValue, getDateTimeValue, getDateValue, getNumberFieldValue, getSwitchValue, getTextValue, getTimeValue, replaceAt, toggleAccordionItem, toggleChoice,
   updateData,
 } from './controlValues'
 import type { FieldValue } from './controlValues'
 import { useFormContext } from './formContext'
-import { inputModeFor, validateControl } from './validation'
+import { inputModeFor, numberSettings, validateControl } from './validation'
+import { isVisible } from './visibility'
 
 export interface ControlRendererProps {
   config: ControlConfig
@@ -54,6 +56,8 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
   // The user has changed this control, so its validation error may be shown.
   const [touched, setTouched] = useState(false)
   const id = config.id ?? generatedId
+  // Hidden by visible_if: render nothing (a grid keeps the empty cell). Hooks above stay unconditional.
+  if (!isVisible(config, data)) return null
   const message = validateControl(config, data)
   const error = message !== null && (touched || showErrors) ? message : undefined
 
@@ -99,6 +103,24 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
           disabled={config.disabled}
           minYear={config.min_year}
           maxYear={config.max_year}
+          onChange={commit}
+        />
+      )
+
+    case 'number':
+      return (
+        <NumberField
+          id={id}
+          label={config.label}
+          required={config.required}
+          error={error}
+          style={config.style}
+          value={getNumberFieldValue(config, data)}
+          placeholder={config.placeholder}
+          decimals={numberSettings(config).decimals}
+          allowNegative={config.min === undefined || config.min < 0}
+          unit={config.unit}
+          disabled={config.disabled}
           onChange={commit}
         />
       )

@@ -6,9 +6,24 @@ export type Variant =
 
 export type Gap = 0 | 1 | 2 | 3 | 4 | 5
 
+// One condition on a data key; use exactly one of equals / not_equals / in / filled.
+// Choice fields compare by option text (true when that option is selected).
+export interface VisibleCondition {
+  field: string
+  equals?: string | number
+  // The field has an answer and it is not this one.
+  not_equals?: string | number
+  in?: (string | number)[]
+  // true = has an answer, false = still empty.
+  filled?: boolean
+}
+
 // Position props are read by the surrounding grid; other parents ignore them.
 interface BaseControl {
   id?: string
+  // Show the control (and everything inside it) only when the condition holds; a list
+  // means all must hold. Hidden controls are not validated; their data is kept.
+  visible_if?: VisibleCondition | VisibleCondition[]
   colno?: number
   rowno?: number
   colspan?: number
@@ -79,6 +94,24 @@ export type DateRangeConfig = BaseControl & RequiredRule & {
   disabled?: boolean
   min_year?: number
   max_year?: number
+}
+
+export type NumberConfig = BaseControl & RequiredRule & {
+  type: 'number'
+  label?: string
+  // A real number; null or missing = empty (0 is a value).
+  value?: number | null
+  databinding?: string
+  placeholder?: string
+  disabled?: boolean
+  min?: number
+  max?: number
+  // Digits allowed after the decimal point; 0 = whole numbers only (default 0).
+  decimals?: number
+  // Shown after the box, e.g. "บาท", "กก." (display only).
+  unit?: string
+  min_message?: string
+  max_message?: string
 }
 
 export type TimeConfig = BaseControl & RequiredRule & {
@@ -229,6 +262,7 @@ export type ControlConfig =
   | TimeConfig
   | DateTimeConfig
   | TextareaConfig
+  | NumberConfig
   | SwitchConfig
   | LabelConfig
   | DropdownConfig

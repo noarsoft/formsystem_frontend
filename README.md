@@ -58,7 +58,7 @@ function Example() {
 }
 ```
 
-Controls: `textbox`, `date`, `date_range`, `time`, `datetime`, `textarea`, `switch`, `label`, `dropdown`, `checkbox_group`, `option`,
+Controls: `textbox`, `number`, `date`, `date_range`, `time`, `datetime`, `textarea`, `switch`, `label`, `dropdown`, `checkbox_group`, `option`,
 `button` (controls); `container`, `grid`, `flex` (containers); `accordion`,
 `card`, `badge` (custom, in `src/componenets/custom`). A password field is a
 `textbox` with `input_type: "password"`: the text is hidden and a แสดง/ซ่อน
@@ -98,7 +98,7 @@ Every control is documented, with live examples, in `src/form/document`
 `libs/controlTypes.ts`, a case to `libs/ControlRenderer.tsx`, and an entry to
 `src/form/document/docs.ts`.
 
-Input controls (`textbox`, `date`, `date_range`, `time`, `datetime`, `textarea`, `dropdown`,
+Input controls (`textbox`, `number`, `date`, `date_range`, `time`, `datetime`, `textarea`, `dropdown`,
 `checkbox_group`, `option`, `switch`) accept `required: true` and an optional
 `required_message`. A required control shows a red `*` after its label and, when
 its value is empty (blank or whitespace-only text, a `null` date, or no option
@@ -125,6 +125,23 @@ format → pattern and show the first failure; an empty optional field passes.
 Override the messages with `min_length_message`, `max_length_message` and
 `pattern_message`. An unknown format, a broken pattern or `min_length` >
 `max_length` throws.
+
+`number` stores a real number (`null` = empty; `0` is a value) bound to
+`{ "type": "number", "value": 65.5 }`. Only digits, one `.` and (when `min`
+allows negatives) a leading `-` can be typed; it shows `1,234.5` when not being
+edited. `min` / `max` limit the value, `decimals` (default 0 = whole numbers)
+limits digits after the point, and `unit` (e.g. `"บาท"`) is shown after the box.
+Checks run required → decimals → min → max (`min_message` / `max_message`
+override the messages); `min` > `max`, bad `decimals` or a non-number value throw.
+
+Any control (containers and cards too) can set `visible_if` to show only when
+the data matches: `{ "field": "gender", "equals": "อื่น ๆ" }`, `not_equals`
+(answered and not that value), `in: [...]` (any of), or `filled: true|false`;
+a list of conditions means all must hold. `field` is a data key; choice fields
+compare by option text (their data needs `options`). Hidden controls and their
+children are not rendered (a grid keeps the empty cell), are skipped by
+`validateForm`, and keep their data. An unknown key or a condition without
+exactly one operator throws. See the live example in the Document tab.
 
 `style` (on any control) accepts `padding`, `margin`, `font_size`, `color`, and
 `border`; `front_size` and `boarder` are accepted as aliases.

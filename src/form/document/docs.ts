@@ -1,4 +1,4 @@
-import type { ControlConfig, FormData } from '../../componenets/libs/controlTypes'
+import type { ControlConfig, FormData, FormDocument } from '../../componenets/libs/controlTypes'
 
 export interface PropDoc {
   name: string
@@ -60,6 +60,13 @@ export const commonProps: PropDoc[] = [
   { name: 'colspan', type: 'number', default: '1', description: 'จำนวนคอลัมน์ที่ control กินพื้นที่ใน grid' },
   { name: 'rowspan', type: 'number', default: '1', description: 'จำนวนแถวที่ control กินพื้นที่ใน grid' },
   {
+    name: 'visible_if',
+    type: '{ field, equals | not_equals | in | filled } หรือ [ ... ]',
+    description:
+      'แสดงเฉพาะเมื่อเงื่อนไขเป็นจริง (หลายข้อใน [ ] ต้องจริงทุกข้อ) field = key ใน data ' +
+      'ช่องที่ซ่อนไม่ถูกตรวจ และค่าใน data ยังอยู่ ดูหัวข้อ "แสดง/ซ่อนตามเงื่อนไข"',
+  },
+  {
     name: 'style',
     type: 'object',
     description: 'padding, margin, font_size, color, border (ค่า CSS เป็น string หรือ number)',
@@ -103,6 +110,40 @@ export const controlDocs: ControlDoc[] = [
       },
     ],
     data: { fname: { type: 'string', value: 'piyavach' } },
+  },
+  {
+    type: 'number',
+    group: 'Control',
+    summary:
+      'ช่องตัวเลข เก็บเป็น Number จริง (ว่าง = null, 0 นับว่ามีค่า) พิมพ์ได้เฉพาะตัวเลข จุดทศนิยม และเครื่องหมายลบ ' +
+      '(เมื่อ min อนุญาต) ตอนไม่ได้แก้ไขแสดงแบบมีลูกน้ำ เช่น 1,234.5 ตรวจ ห้ามว่าง → ทศนิยม → min → max',
+    props: [
+      { name: 'label', type: 'string', description: 'ข้อความป้ายกำกับ' },
+      { name: 'value', type: 'number | null', default: 'null', description: 'ค่าปัจจุบัน ค่าที่ไม่ใช่ตัวเลขจะ throw error' },
+      { name: 'placeholder', type: 'string', description: 'ข้อความเมื่อยังไม่มีค่า' },
+      { name: 'min', type: 'number', description: 'ค่าต่ำสุด (ถ้าไม่ติดลบ จะพิมพ์ - ไม่ได้)' },
+      { name: 'max', type: 'number', description: 'ค่าสูงสุด' },
+      { name: 'decimals', type: 'number', default: '0', description: 'จำนวนทศนิยมที่ยอมรับ 0 = จำนวนเต็มเท่านั้น (พิมพ์จุดแล้วจะเตือน) ถ้ามากกว่า 0 พิมพ์ทศนิยมเกินไม่ได้' },
+      { name: 'unit', type: 'string', description: 'หน่วยท้ายช่อง เช่น "บาท", "กก." (แสดงอย่างเดียว)' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'ปิดการแก้ไข' },
+      ...requiredProps,
+      { name: 'min_message', type: 'string', description: 'ข้อความแทน "ต้องไม่น้อยกว่า N"' },
+      { name: 'max_message', type: 'string', description: 'ข้อความแทน "ต้องไม่เกิน N"' },
+      {
+        name: 'databinding',
+        type: 'string',
+        description: 'key ใน data ที่เป็น { "type": "number", "value": 65.5 } (value เป็น null ได้) ค่าใน data ชนะ value ใน schema',
+      },
+    ],
+    examples: [
+      { type: 'number', id: 'ex_number_price', label: 'ราคา', unit: 'บาท', decimals: 2, min: 0, value: 1234.5 },
+      {
+        type: 'number', id: 'ex_number_weight', label: 'น้ำหนัก (bind กับ weight, 1-300, ทศนิยม 1, required)',
+        databinding: 'weight', unit: 'กก.', min: 1, max: 300, decimals: 1, required: true,
+      },
+      { type: 'number', id: 'ex_number_people', label: 'จำนวนคน (จำนวนเต็ม, ไม่เกิน 10)', min: 1, max: 10, value: 12 },
+    ],
+    data: { weight: { type: 'number', value: 65.5 } },
   },
   {
     type: 'date',
@@ -512,3 +553,49 @@ export const controlDocs: ControlDoc[] = [
     examples: [{ type: 'badge', id: 'ex_badge', text: 'ใช้งานอยู่', variant: 'success', pill: true }],
   },
 ]
+
+// Live example for the "แสดง/ซ่อนตามเงื่อนไข (visible_if)" section.
+export const visibleIfExample: { form: FormDocument, data: FormData } = {
+  form: {
+    controls: [
+      { type: 'option', id: 'vi_gender', label: 'เพศ', databinding: 'gender', inline: true },
+      {
+        type: 'textbox', id: 'vi_gender_other', label: 'โปรดระบุ (equals: "อื่น ๆ")', databinding: 'gender_other',
+        required: true, visible_if: { field: 'gender', equals: 'อื่น ๆ' },
+      },
+      { type: 'checkbox_group', id: 'vi_disease', label: 'โรคประจำตัว', databinding: 'disease', inline: true },
+      {
+        type: 'textbox', id: 'vi_medicine', label: 'ยาที่ใช้ประจำ (not_equals: "ไม่มี")', databinding: 'medicine',
+        visible_if: { field: 'disease', not_equals: 'ไม่มี' },
+      },
+      { type: 'dropdown', id: 'vi_education', label: 'ระดับการศึกษา', databinding: 'education' },
+      {
+        type: 'textbox', id: 'vi_thesis', label: 'หัวข้อวิทยานิพนธ์ (in: ["ปริญญาโท", "ปริญญาเอก"])', databinding: 'thesis',
+        visible_if: { field: 'education', in: ['ปริญญาโท', 'ปริญญาเอก'] },
+      },
+      { type: 'switch', id: 'vi_contact', text: 'ให้ติดต่อกลับ', databinding: 'contact' },
+      {
+        type: 'card', id: 'vi_contact_card', header: 'ช่องทางติดต่อ (equals: 1 — ซ่อนทั้งการ์ด)',
+        visible_if: { field: 'contact', equals: 1 },
+        controls: [
+          { type: 'textbox', id: 'vi_phone', label: 'เบอร์มือถือ', databinding: 'phone', format: 'phone_th', required: true },
+          {
+            type: 'textbox', id: 'vi_time', label: 'เวลาที่สะดวก (filled: เบอร์ + เพศ = หญิง)', databinding: 'call_time',
+            visible_if: [{ field: 'phone', filled: true }, { field: 'gender', equals: 'หญิง' }],
+          },
+        ],
+      },
+    ],
+  },
+  data: {
+    gender: { type: 'number', is_array: 1, options: ['ชาย', 'หญิง', 'อื่น ๆ'], value: [0, 0, 0] },
+    gender_other: { type: 'string', value: '' },
+    disease: { type: 'number', is_array: 1, options: ['ไม่มี', 'เบาหวาน', 'ความดัน'], value: [0, 0, 0] },
+    medicine: { type: 'string', value: '' },
+    education: { type: 'number', is_array: 1, options: ['ปริญญาตรี', 'ปริญญาโท', 'ปริญญาเอก'], value: [1, 0, 0] },
+    thesis: { type: 'string', value: '' },
+    contact: { type: 'number', value: 0 },
+    phone: { type: 'string', value: '' },
+    call_time: { type: 'string', value: '' },
+  },
+}

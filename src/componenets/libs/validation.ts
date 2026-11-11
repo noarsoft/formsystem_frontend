@@ -1,6 +1,11 @@
-import type { ControlConfig, FormData, FormDocument, TextareaConfig, TextboxConfig, TextFormat } from './controlTypes'
+import type {
+  ControlConfig, FormData, FormDocument, NumberConfig, TextareaConfig, TextboxConfig, TextFormat,
+} from './controlTypes'
+import { decimalPlaces, formatNumber } from './numberValue'
+import { isVisible } from './visibility'
 import {
-  getChoiceState, getDateRangeValue, getDateTimeValue, getDateValue, getSwitchValue, getTextValue, getTimeValue,
+  getChoiceState, getDateRangeValue, getDateTimeValue, getDateValue, getNumberFieldValue, getSwitchValue, getTextValue,
+  getTimeValue,
 } from './controlValues'
 import type { FieldValue } from './controlValues'
 
@@ -120,6 +125,43 @@ export function textRuleError(config: TextboxConfig | TextareaConfig, value: str
   return null
 }
 
+export const INTEGER_MESSAGE = 'ต้องเป็นจำนวนเต็ม'
+export const NOT_A_NUMBER_MESSAGE = 'กรุณากรอกตัวเลข'
+export const decimalsMessage = (n: number) => `ทศนิยมได้ไม่เกิน ${n} ตำแหน่ง`
+// Limits are shown exactly as set: 1500 -> "1,500", 1.5 -> "1.5".
+const showLimit = (n: number) => formatNumber(n, decimalPlaces(n))
+export const minValueMessage = (n: number) => `ต้องไม่น้อยกว่า ${showLimit(n)}`
+export const maxValueMessage = (n: number) => `ต้องไม่เกิน ${showLimit(n)}`
+
+// Checks the settings of a number control (throws when they are wrong) and returns its decimals.
+export function numberSettings(config: NumberConfig): { decimals: number } {
+  const name = config.id ?? config.type
+  const decimals = config.decimals ?? 0
+  if (!Number.isInteger(decimals) || decimals < 0 || decimals > 20) {
+    throw new Error(`Control "${name}" decimals must be an integer from 0 to 20`)
+  }
+  for (const key of ['min', 'max'] as const) {
+    const n = config[key]
+    if (n !== undefined && (typeof n !== 'number' || !Number.isFinite(n))) {
+      throw new Error(`Control "${name}" ${key} must be a number`)
+    }
+  }
+  if (config.min !== undefined && config.max !== undefined && config.min > config.max) {
+    throw new Error(`Control "${name}" min (${config.min}) is greater than max (${config.max})`)
+  }
+  return { decimals }
+}
+
+// Decimals, then min, then max, for a non-null value (empty is left to `required`).
+export function numberRuleError(config: NumberConfig, value: number | null): string | null {
+  const { decimals } = numberSettings(config)
+  if (value === null) return null
+  if (decimalPlaces(value) > decimals) return decimals === 0 ? INTEGER_MESSAGE : decimalsMessage(decimals)
+  if (config.min !== undefined && value < config.min) return config.min_message ?? minValueMessage(config.min)
+  if (config.max !== undefined && value > config.max) return config.max_message ?? maxValueMessage(config.max)
+  return null
+}
+
 // '' / whitespace-only text, a null date and a choice with no 1 all count as empty.
 export function isEmptyValue(value: FieldValue): boolean {
   if (value === null) return true
@@ -146,6 +188,10 @@ export function validateControl(config: ControlConfig, data?: FormData): string 
       // Order: required, then length, then format / pattern; the first failure is shown.
       const value = getTextValue(config, data)
       return checkRequired(config, value, REQUIRED_TEXT_MESSAGE) ?? textRuleError(config, value)
+    }
+    case 'number': {
+      const value = getNumberFieldValue(config, data)
+      return checkRequired(config, value, REQUIRED_TEXT_MESSAGE) ?? numberRuleError(config, value)
     }
     case 'date':
       return checkRequired(config, getDateValue(config, data), REQUIRED_DATE_MESSAGE)
@@ -195,12 +241,14 @@ function childGroups(config: ControlConfig): { path: string, controls: ControlCo
 }
 
 // Every validation error in the form, in document order (including controls inside
-// containers, cards and closed accordion items). An empty array means the form is valid.
+// containers, cards and closed accordion items). Controls hidden by visible_if, and
+// everything inside them, are skipped. An empty array means the form is valid.
 export function validateForm(form: FormDocument, data?: FormData): ValidationError[] {
   const errors: ValidationError[] = []
   const walk = (controls: ControlConfig[], path: string) => {
     controls.forEach((config, index) => {
       const position = `${path}[${index}]`
+      if (!isVisible(config, data)) return
       const message = validateControl(config, data)
       if (message !== null) errors.push({ id: config.id ?? position, message })
       for (const group of childGroups(config)) walk(group.controls, `${position}.${group.path}`)

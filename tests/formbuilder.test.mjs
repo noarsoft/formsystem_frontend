@@ -14,6 +14,8 @@ let docs
 let dates
 let validation
 let editor
+let numbers
+let visibility
 
 before(async () => {
   server = await createServer({ server: { middlewareMode: true }, appType: 'custom' })
@@ -21,6 +23,8 @@ before(async () => {
   values = await server.ssrLoadModule('/src/componenets/libs/controlValues.ts')
   validation = await server.ssrLoadModule('/src/componenets/libs/validation.ts')
   editor = await server.ssrLoadModule('/src/demo/editor.ts')
+  numbers = await server.ssrLoadModule('/src/componenets/libs/numberValue.ts')
+  visibility = await server.ssrLoadModule('/src/componenets/libs/visibility.ts')
   layout = await server.ssrLoadModule('/src/componenets/libs/gridLayout.ts')
   FormBuilder = (await server.ssrLoadModule('/src/componenets/libs/Formbuilder.tsx')).default
   componentStyle = (await server.ssrLoadModule('/src/componenets/libs/componentStyle.ts')).componentStyle
@@ -185,7 +189,7 @@ test('custom controls render accordion, card and badge', () => {
 
 test('every documented control type renders its examples', () => {
   const types = new Set(docs.controlDocs.map((doc) => doc.type))
-  assert.equal(types.size, 18)
+  assert.equal(types.size, 19)
   for (const doc of docs.controlDocs) {
     assert.doesNotThrow(() => render(doc.examples, doc.data), doc.type)
   }
@@ -685,12 +689,12 @@ test('addControl builds the right config and data for every addable type', () =>
   const { grid } = editor.findGrid(form)
   assert.equal(grid.rows, editor.ADDABLE_TYPES.length)
   assert.deepEqual(Object.keys(data), [
-    'textbox_1', 'textarea_1', 'date_1', 'date_range_1_from', 'date_range_1_to', 'time_1', 'datetime_1',
+    'textbox_1', 'textarea_1', 'number_1', 'date_1', 'date_range_1_from', 'date_range_1_to', 'time_1', 'datetime_1',
     'dropdown_1', 'checkbox_group_1', 'option_1', 'switch_1',
   ])
   assert.deepEqual(data.option_1, { type: 'number', is_array: 1, options: ['a', 'b'], value: [0, 0] })
   assert.deepEqual(data.switch_1, { type: 'number', value: 0 })
-  assert.deepEqual(grid.controls.at(-1), { type: 'label', id: 'label_1', text: 'L10', colno: 0, rowno: 10 })
+  assert.deepEqual(grid.controls.at(-1), { type: 'label', id: 'label_1', text: 'L11', colno: 0, rowno: 11 })
   assert.equal(grid.controls.some((c) => 'required' in c), false)
   assert.doesNotThrow(() => render(form.controls, data))
   assert.deepEqual(validation.validateForm(form, data), [])
@@ -853,4 +857,193 @@ test('demo editor can add a textbox with a format', () => {
     type: 'textarea', label: 'x', required: false, options: [], cell: { colno: 1, rowno: 0 }, format: 'phone_th',
   })
   assert.equal('format' in editor.findGrid(plain.form).grid.controls.at(-1), false)
+})
+
+// ---- number ----
+
+test('number helpers: what can be typed, parsing and display', () => {
+  const { sanitizeNumberText: clean } = numbers
+  assert.equal(clean('1,234.567', 2, true), '1234.56')
+  // Integers keep the "." so validation can say "ต้องเป็นจำนวนเต็ม" (dropping it would make 125).
+  assert.equal(clean('12.5', 0, true), '12.5')
+  assert.equal(clean('-12', 0, false), '12')
+  assert.equal(clean('-1-2', 1, true), '-12')
+  assert.equal(clean('1.2.3', 3, true), '1.23')
+  assert.equal(clean('a1b2e3', 0, true), '123')
+  assert.equal(clean('-', 0, true), '-')
+  for (const [text, n] of [['12', 12], ['-3.5', -3.5], ['12.', 12], ['.5', 0.5], ['1,234', 1234], ['0', 0]]) {
+    assert.equal(numbers.parseNumberText(text), n, text)
+  }
+  for (const text of ['', ' ', '-', '.', '-.', '1e3', 'abc']) assert.equal(numbers.parseNumberText(text), null, text)
+  assert.equal(numbers.formatNumber(1234.5, 2), '1,234.5')
+  assert.equal(numbers.formatNumber(1234567, 0), '1,234,567')
+  assert.equal(numbers.formatNumber(-0.25, 2), '-0.25')
+  assert.equal(numbers.decimalPlaces(1.25), 2)
+  assert.equal(numbers.decimalPlaces(0.1 + 0.2), 1)
+  assert.equal(numbers.decimalPlaces(7), 0)
+})
+
+test('number values are real numbers, inline or bound', () => {
+  assert.equal(values.getNumberFieldValue({ type: 'number', value: 0 }), 0)
+  assert.equal(values.getNumberFieldValue({ type: 'number' }), null)
+  assert.equal(values.getNumberFieldValue({ type: 'number', databinding: 'w', value: 1 }, { w: { type: 'number', value: 65.5 } }), 65.5)
+  for (const bad of ['12', NaN, Infinity, true]) {
+    assert.throws(() => values.getNumberFieldValue({ type: 'number', id: 'n', value: bad }), /valid number/, String(bad))
+  }
+  assert.throws(() => values.getNumberFieldValue({ type: 'number', databinding: 'fname' }, data), /number field/)
+  assert.deepEqual(values.updateData({ w: { type: 'number', value: null } }, 'w', 70), { w: { type: 'number', value: 70 } })
+})
+
+test('number validation: required, decimals, min, max and messages', () => {
+  const n = (extra) => ({ type: 'number', id: 'n', ...extra })
+  assert.equal(validation.validateControl(n({ required: true })), validation.REQUIRED_TEXT_MESSAGE)
+  assert.equal(validation.validateControl(n({ required: true, value: 0 })), null)
+  assert.equal(validation.validateControl(n({ value: 1.5 })), 'ต้องเป็นจำนวนเต็ม')
+  assert.equal(validation.validateControl(n({ decimals: 2, value: 1.25 })), null)
+  assert.equal(validation.validateControl(n({ decimals: 1, value: 1.25 })), 'ทศนิยมได้ไม่เกิน 1 ตำแหน่ง')
+  assert.equal(validation.validateControl(n({ decimals: 1, value: 0.1 + 0.2 })), null)
+  assert.equal(validation.validateControl(n({ min: 1, value: 0 })), 'ต้องไม่น้อยกว่า 1')
+  assert.equal(validation.validateControl(n({ max: 1500, value: 2000 })), 'ต้องไม่เกิน 1,500')
+  assert.equal(validation.validateControl(n({ min: 1.5, decimals: 0, value: 1 })), 'ต้องไม่น้อยกว่า 1.5')
+  assert.equal(validation.validateControl(n({ min: 1, max: 10, value: 10 })), null)
+  assert.equal(validation.validateControl(n({ min: 1, min_message: 'น้อยไป', value: 0 })), 'น้อยไป')
+  assert.equal(validation.validateControl(n({ max: 1, max_message: 'มากไป', value: 2 })), 'มากไป')
+  // Decimals are checked before min/max; empty and not required passes.
+  assert.equal(validation.validateControl(n({ min: 5, value: 1.5 })), 'ต้องเป็นจำนวนเต็ม')
+  assert.equal(validation.validateControl(n({ min: 5 })), null)
+  // Bad settings throw.
+  assert.throws(() => validation.validateControl(n({ min: 5, max: 1 })), /min \(5\) is greater than max \(1\)/)
+  assert.throws(() => validation.validateControl(n({ decimals: -1 })), /decimals must be an integer/)
+  assert.throws(() => validation.validateControl(n({ max: '10' })), /max must be a number/)
+})
+
+test('number renders a text box with grouping, unit and the right keyboard', () => {
+  const html = render([
+    { type: 'number', id: 'p', label: 'ราคา', unit: 'บาท', decimals: 2, value: 1234.5 },
+    { type: 'number', id: 'c', value: 1234567 },
+    { type: 'number', id: 'e' },
+  ])
+  assert.match(html, /<div class="input-group"><input id="p" class="form-control" type="text" inputMode="decimal"[^>]*value="1,234.5"\/><span class="input-group-text">บาท<\/span><\/div>/)
+  assert.match(html, /id="c"[^>]*inputMode="numeric"[^>]*value="1,234,567"/)
+  assert.match(html, /id="e"[^>]*value=""/)
+  assert.doesNotMatch(html, /type="number"/)
+  const err = render([{ type: 'number', id: 'w', unit: 'กก.', min: 1, value: 0 }], undefined, { showErrors: true })
+  assert.match(err, /<div class="input-group has-validation"><input id="w" class="form-control is-invalid"/)
+  assert.match(err, /<div id="w-error" class="invalid-feedback d-block">ต้องไม่น้อยกว่า 1<\/div>/)
+})
+
+test('demo editor adds a number with an empty number data key', () => {
+  const added = editor.addControl(demoForm(), demoData(), { type: 'number', label: 'อายุ', required: true, options: [], cell: { colno: 1, rowno: 0 } })
+  assert.deepEqual(added.data.number_1, { type: 'number', value: null })
+  assert.deepEqual(validation.validateForm(added.form, added.data), [{ id: 'number_1', message: validation.REQUIRED_TEXT_MESSAGE }])
+})
+
+// ---- visible_if ----
+
+const viData = {
+  gender: { type: 'number', is_array: 1, options: ['ชาย', 'หญิง', 'อื่น ๆ'], value: [0, 0, 1] },
+  disease: { type: 'number', is_array: 1, options: ['ไม่มี', 'เบาหวาน', 'ความดัน'], value: [0, 1, 1] },
+  note: { type: 'string', value: '  ' },
+  company: { type: 'string', value: 'ACME' },
+  contact: { type: 'number', value: 1 },
+  age: { type: 'number', value: null },
+}
+const shown = (visible_if, d = viData) => visibility.isVisible({ type: 'label', text: 'x', visible_if }, d)
+
+test('visible_if: equals / not_equals / in / filled on each kind of field', () => {
+  assert.equal(visibility.isVisible({ type: 'label', text: 'x' }), true)
+  // Choice fields compare by option text.
+  assert.equal(shown({ field: 'gender', equals: 'อื่น ๆ' }), true)
+  assert.equal(shown({ field: 'gender', equals: 'ชาย' }), false)
+  assert.equal(shown({ field: 'disease', equals: 'ความดัน' }), true) // checkbox: any selected
+  assert.equal(shown({ field: 'disease', not_equals: 'ไม่มี' }), true)
+  assert.equal(shown({ field: 'disease', not_equals: 'เบาหวาน' }), false)
+  // not_equals needs an answer: nothing chosen is hidden.
+  const none = { ...viData, disease: { ...viData.disease, value: [0, 0, 0] } }
+  assert.equal(shown({ field: 'disease', not_equals: 'ไม่มี' }, none), false)
+  assert.equal(shown({ field: 'gender', in: ['หญิง', 'อื่น ๆ'] }), true)
+  assert.equal(shown({ field: 'gender', in: ['ชาย'] }), false)
+  // Text: blank counts as empty.
+  assert.equal(shown({ field: 'company', equals: 'ACME' }), true)
+  assert.equal(shown({ field: 'company', filled: true }), true)
+  assert.equal(shown({ field: 'note', filled: true }), false)
+  assert.equal(shown({ field: 'note', filled: false }), true)
+  // Numbers (switch, number, dates): null is empty, 0 is a value.
+  assert.equal(shown({ field: 'contact', equals: 1 }), true)
+  assert.equal(shown({ field: 'contact', equals: '1' }), false)
+  assert.equal(shown({ field: 'age', filled: false }), true)
+  assert.equal(shown({ field: 'age', filled: true }, { ...viData, age: { type: 'number', value: 0 } }), true)
+  // A list: all must hold.
+  assert.equal(shown([{ field: 'gender', equals: 'อื่น ๆ' }, { field: 'contact', equals: 1 }]), true)
+  assert.equal(shown([{ field: 'gender', equals: 'อื่น ๆ' }, { field: 'contact', equals: 0 }]), false)
+})
+
+test('visible_if mistakes throw', () => {
+  assert.throws(() => shown({ field: 'missing', equals: 1 }), /refers to "missing" but the data has no such field/)
+  assert.throws(() => visibility.isVisible({ type: 'label', text: 'x', visible_if: { field: 'a', equals: 1 } }), /no such field/)
+  assert.throws(() => shown({ field: 'gender' }), /exactly one of equals, not_equals, in, filled/)
+  assert.throws(() => shown({ field: 'gender', equals: 'ชาย', in: ['หญิง'] }), /exactly one/)
+  assert.throws(() => shown({ field: 'gender', in: 'ชาย' }), /"in" must be a list/)
+  const noOptions = { gender: { type: 'number', is_array: 1, value: [1, 0] } }
+  assert.throws(() => shown({ field: 'gender', equals: 'ชาย' }, noOptions), /needs "options"/)
+})
+
+test('hidden controls (and their children) are not rendered or validated', () => {
+  const controls = [
+    { type: 'textbox', id: 'other', label: 'โปรดระบุ', required: true, visible_if: { field: 'gender', equals: 'ชาย' } },
+    {
+      type: 'card', id: 'c', visible_if: { field: 'contact', equals: 0 },
+      controls: [{ type: 'textbox', id: 'inside', required: true }],
+    },
+    { type: 'textbox', id: 'shown', required: true, visible_if: { field: 'gender', equals: 'อื่น ๆ' } },
+  ]
+  const html = render(controls, viData, { showErrors: true })
+  assert.doesNotMatch(html, /id="other"|id="inside"|id="c"/)
+  assert.match(html, /id="shown"[^>]*is-invalid|id="shown" class="form-control is-invalid"/)
+  assert.deepEqual(validation.validateForm({ controls }, viData).map((e) => e.id), ['shown'])
+  // Change the answers: the other two appear and are checked.
+  const flipped = { ...viData, gender: { ...viData.gender, value: [1, 0, 0] }, contact: { type: 'number', value: 0 } }
+  assert.deepEqual(validation.validateForm({ controls }, flipped).map((e) => e.id), ['other', 'inside'])
+  // In a grid the hidden control leaves its cell empty.
+  const grid = render([{ type: 'grid', columns: 2, controls: [{ ...controls[0], colno: 0, rowno: 0 }, { type: 'label', text: 'L', colno: 1, rowno: 0 }] }], viData)
+  assert.match(grid, /<div style="grid-column:1 \/ span 1;grid-row:1 \/ span 1"><\/div>/)
+})
+
+test('the Document tab visible_if example renders and validates', () => {
+  const { visibleIfExample } = docs
+  const { form, data: d } = visibleIfExample
+  const start = render(form.controls, d)
+  assert.doesNotMatch(start, /id="vi_gender_other"|id="vi_medicine"|id="vi_thesis"|id="vi_phone"/)
+  assert.deepEqual(validation.validateForm(form, d), [])
+  const answered = {
+    ...d,
+    gender: { ...d.gender, value: [0, 1, 0] },
+    education: { ...d.education, value: [0, 0, 1] },
+    contact: { type: 'number', value: 1 },
+    phone: { type: 'string', value: '0812345678' },
+  }
+  const html = render(form.controls, answered)
+  assert.match(html, /id="vi_thesis"/)
+  assert.match(html, /id="vi_phone"/)
+  assert.match(html, /id="vi_time"/)
+  assert.doesNotMatch(html, /id="vi_gender_other"/)
+  assert.deepEqual(validation.validateForm(form, { ...answered, phone: { type: 'string', value: '' } }).map((e) => e.id), ['vi_phone'])
+})
+
+test('demo editor keeps data keys still read by another control\'s visible_if', () => {
+  const form = {
+    controls: [{
+      type: 'grid', columns: 2, rows: 1,
+      controls: [
+        { type: 'option', id: 'g', databinding: 'gender', colno: 0, rowno: 0 },
+        { type: 'textbox', id: 'o', databinding: 'other', visible_if: { field: 'gender', equals: 'อื่น ๆ' }, colno: 1, rowno: 0 },
+      ],
+    }],
+  }
+  const d = { gender: viData.gender, other: { type: 'string', value: '' } }
+  const removed = editor.removeControl(form, d, [0])
+  assert.ok('gender' in removed.data)
+  assert.doesNotThrow(() => render(removed.form.controls, removed.data))
+  // Removing the dependent control too lets the key go.
+  assert.deepEqual(Object.keys(editor.removeControl(removed.form, removed.data, [0]).data), [])
 })

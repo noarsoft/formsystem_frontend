@@ -1,9 +1,11 @@
 // Pure helpers for the Demo page's form editor: add a control to the grid, remove one.
 import type { ControlConfig, FormData, FormDocument, GridConfig, TextFormat } from '../componenets/libs/controlTypes'
+import { visibleIfFields } from '../componenets/libs/visibility'
 
 export const ADDABLE_TYPES = [
   { type: 'textbox', name: 'ช่องข้อความ (textbox)' },
   { type: 'textarea', name: 'ข้อความหลายบรรทัด (textarea)' },
+  { type: 'number', name: 'ตัวเลข (number)' },
   { type: 'date', name: 'วันที่ (date)' },
   { type: 'date_range', name: 'ช่วงวันที่ (date_range)' },
   { type: 'time', name: 'เวลา (time)' },
@@ -118,6 +120,7 @@ function newControl(input: NewControl, id: string): { control: ControlConfig, fi
       }
     case 'textarea':
       return { control: { ...base, type, databinding: id }, fields: { [id]: { type: 'string', value: '' } } }
+    case 'number':
     case 'date':
     case 'time':
     case 'datetime':
@@ -205,15 +208,19 @@ function removeAt(controls: ControlConfig[], path: number[]): { controls: Contro
   return { controls: controls.map((c, j) => (j === i ? { ...target, controls: inner.controls } as ControlConfig : c)), removed: inner.removed }
 }
 
-// Removes the control at `path` (with everything inside it) and the data keys that no
-// remaining control uses.
+// Removes the control at `path` (with everything inside it). Data keys it bound to or read in
+// visible_if are removed too, unless a remaining control still binds to or reads them.
 export function removeControl(form: FormDocument, data: FormData, path: number[]) {
   const { index, grid } = findGrid(form)
   const { controls, removed } = removeAt(grid.controls, path)
   const nextForm = { ...form, controls: form.controls.map((c, i) => (i === index ? { ...grid, controls } : c)) }
   const stillUsed = new Set(bindingsOf(nextForm.controls))
+  walk(nextForm.controls, (control) => visibleIfFields(control).forEach((key) => stillUsed.add(key)))
+  // Keys the removed controls bound to or read in visible_if; drop those nothing uses any more.
+  const candidates = new Set(bindingsOf([removed]))
+  walk([removed], (control) => visibleIfFields(control).forEach((key) => candidates.add(key)))
   const nextData = Object.fromEntries(
-    Object.entries(data).filter(([key]) => stillUsed.has(key) || !bindingsOf([removed]).includes(key)),
+    Object.entries(data).filter(([key]) => stillUsed.has(key) || !candidates.has(key)),
   ) as FormData
   return { form: nextForm, data: nextData }
 }
