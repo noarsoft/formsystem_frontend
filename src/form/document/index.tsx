@@ -82,7 +82,7 @@ export default function ControlDocument() {
 
       <h3 className="h4 mt-4">Validation (required)</h3>
       <p>
-        ช่องกรอกและช่องตัวเลือก (textbox, password, date, textarea, dropdown, checkbox_group, option) ตั้ง{' '}
+        ช่องกรอกและช่องตัวเลือก (textbox, date, textarea, dropdown, checkbox_group, option) ตั้ง{' '}
         <code>{'"required": true'}</code> ได้ จะมี <span className="text-danger">*</span> หลัง label
         และถ้าค่าว่างจะแสดงข้อความสีแดงใต้ช่อง (เปลี่ยนข้อความด้วย <code>required_message</code>)
         ข้อความจะขึ้นหลังผู้ใช้แก้ช่องนั้น หรือขึ้นทุกช่องพร้อมกันเมื่อส่ง{' '}

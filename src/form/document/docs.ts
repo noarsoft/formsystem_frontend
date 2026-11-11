@@ -53,12 +53,15 @@ export const controlDocs: ControlDoc[] = [
   {
     type: 'textbox',
     group: 'Control',
-    summary: 'ช่องกรอกข้อความบรรทัดเดียว (Bootstrap form-control) ค่าที่พิมพ์จะถูกเก็บใน value',
+    summary:
+      'ช่องกรอกข้อความบรรทัดเดียว (Bootstrap form-control) ค่าที่พิมพ์จะถูกเก็บใน value ' +
+      'ถ้า input_type เป็น password ข้อความจะถูกซ่อนเป็นจุดและมีปุ่ม "แสดง/ซ่อน" ' +
+      '(สถานะแสดง/ซ่อนเป็นของหน้าจอ ไม่ถูกเก็บใน JSON หรือ data)',
     props: [
       { name: 'label', type: 'string', description: 'ข้อความป้ายกำกับ' },
       { name: 'value', type: 'string', default: "''", description: 'ค่าปัจจุบัน' },
       { name: 'placeholder', type: 'string', description: 'ข้อความตัวอย่างในช่อง' },
-      { name: 'input_type', type: "'text' | 'password' | 'email' | 'number' | 'tel' | 'url'", default: "'text'", description: 'ชนิดของ input' },
+      { name: 'input_type', type: "'text' | 'password' | 'email' | 'number' | 'tel' | 'url'", default: "'text'", description: "ชนิดของ input ('password' = ช่องรหัสผ่านพร้อมปุ่มแสดง/ซ่อน)" },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'ปิดการแก้ไข' },
       ...requiredProps,
       bindingProp,
@@ -70,26 +73,12 @@ export const controlDocs: ControlDoc[] = [
         type: 'textbox', id: 'ex_textbox_required', label: 'อีเมล (required — ลบข้อความออกเพื่อดูข้อความแจ้งเตือน)',
         input_type: 'email', required: true, required_message: 'กรุณากรอกอีเมล', value: 'a@b.c',
       },
+      {
+        type: 'textbox', id: 'ex_textbox_password', label: 'รหัสผ่าน', input_type: 'password',
+        placeholder: 'กรอกรหัสผ่าน', value: 'secret',
+      },
     ],
     data: { fname: { type: 'string', value: 'piyavach' } },
-  },
-  {
-    type: 'password',
-    group: 'Control',
-    summary:
-      'ช่องรหัสผ่าน สร้างจาก Textbox + Button ข้อความถูกซ่อนเป็นจุด กดปุ่ม "แสดง/ซ่อน" เพื่อสลับ ' +
-      '(สถานะแสดง/ซ่อนเป็นของหน้าจอ ไม่ถูกเก็บใน JSON หรือ data)',
-    props: [
-      { name: 'label', type: 'string', description: 'ข้อความป้ายกำกับ' },
-      { name: 'value', type: 'string', default: "''", description: 'ค่าปัจจุบัน' },
-      { name: 'placeholder', type: 'string', description: 'ข้อความตัวอย่างในช่อง' },
-      { name: 'disabled', type: 'boolean', default: 'false', description: 'ปิดการแก้ไขช่องกรอก' },
-      ...requiredProps,
-      bindingProp,
-    ],
-    examples: [
-      { type: 'password', id: 'ex_password', label: 'รหัสผ่าน', placeholder: 'กรอกรหัสผ่าน', value: 'secret' },
-    ],
   },
   {
     type: 'date',

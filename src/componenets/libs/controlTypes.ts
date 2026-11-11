@@ -30,16 +30,8 @@ export type TextboxConfig = BaseControl & RequiredRule & {
   value?: string
   databinding?: string
   placeholder?: string
+  // 'password' hides the text and shows a แสดง/ซ่อน toggle button.
   input_type?: 'text' | 'password' | 'email' | 'number' | 'tel' | 'url'
-  disabled?: boolean
-}
-
-export type PasswordConfig = BaseControl & RequiredRule & {
-  type: 'password'
-  label?: string
-  value?: string
-  databinding?: string
-  placeholder?: string
   disabled?: boolean
 }
 
@@ -162,7 +154,6 @@ export type BadgeConfig = BaseControl & {
 
 export type ControlConfig =
   | TextboxConfig
-  | PasswordConfig
   | DateConfig
   | TextareaConfig
   | LabelConfig

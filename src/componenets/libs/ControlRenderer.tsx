@@ -9,7 +9,6 @@ import Dropdown from '../control/dropdown/Dropdown'
 import Label from '../control/label/Label'
 import Option from '../control/option/Option'
 import DateField from '../control/date/date'
-import Password from '../control/password/password'
 import Textarea from '../control/textarea/Textarea'
 import Textbox from '../control/textbox/Textbox'
 import Accordion from '../custom/accordion/Accordion'
@@ -76,21 +75,6 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
           value={getTextValue(config, data)}
           placeholder={config.placeholder}
           inputType={config.input_type}
-          disabled={config.disabled}
-          onChange={commit}
-        />
-      )
-
-    case 'password':
-      return (
-        <Password
-          id={id}
-          label={config.label}
-          required={config.required}
-          error={error}
-          style={config.style}
-          value={getTextValue(config, data)}
-          placeholder={config.placeholder}
           disabled={config.disabled}
           onChange={commit}
         />

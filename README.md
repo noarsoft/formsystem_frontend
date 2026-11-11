@@ -58,9 +58,11 @@ function Example() {
 }
 ```
 
-Controls: `textbox`, `password`, `date`, `textarea`, `label`, `dropdown`, `checkbox_group`, `option`,
+Controls: `textbox`, `date`, `textarea`, `label`, `dropdown`, `checkbox_group`, `option`,
 `button` (controls); `container`, `grid`, `flex` (containers); `accordion`,
-`card`, `badge` (custom, in `src/componenets/custom`). Choice controls use
+`card`, `badge` (custom, in `src/componenets/custom`). A password field is a
+`textbox` with `input_type: "password"`: the text is hidden and a แสดง/ซ่อน
+button toggles it (there is no separate `password` control). Choice controls use
 `options: string[]` and `value: number[]` (one 0/1 per option):
 `checkbox_group` selects any number, `option` selects at most one, and
 `dropdown` is single unless `multiple: true`. `date` stores a Buddhist-era
@@ -79,7 +81,7 @@ Every control is documented, with live examples, in `src/form/document`
 `libs/controlTypes.ts`, a case to `libs/ControlRenderer.tsx`, and an entry to
 `src/form/document/docs.ts`.
 
-Input controls (`textbox`, `password`, `date`, `textarea`, `dropdown`,
+Input controls (`textbox`, `date`, `textarea`, `dropdown`,
 `checkbox_group`, `option`) accept `required: true` and an optional
 `required_message`. A required control shows a red `*` after its label and, when
 its value is empty (blank or whitespace-only text, a `null` date, or no option

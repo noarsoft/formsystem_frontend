@@ -1,6 +1,6 @@
 import type {
   AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DropdownConfig, FormData,
-  OptionConfig, PasswordConfig, TextareaConfig, TextboxConfig,
+  OptionConfig, TextareaConfig, TextboxConfig,
 } from './controlTypes'
 import { parseDateNumber } from './dateValue'
 
@@ -24,7 +24,7 @@ function getField(config: ControlConfig, key: string, data?: FormData) {
 
 // A bound control always reads its value from the data; inline `value` is ignored.
 export function getTextValue(
-  config: TextboxConfig | PasswordConfig | TextareaConfig,
+  config: TextboxConfig | TextareaConfig,
   data?: FormData,
 ): string {
   if (config.databinding !== undefined) {

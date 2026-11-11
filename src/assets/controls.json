@@ -17,7 +17,7 @@
                     "id": "flex1",
                     "type": "flex",
                     "is_horizontal": 1,
-                    "colno": 2,
+                    "colno": 0,
                     "rowno": 1,
                     "controls": [
                         {

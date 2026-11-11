@@ -183,7 +183,7 @@ test('custom controls render accordion, card and badge', () => {
 
 test('every documented control type renders its examples', () => {
   const types = new Set(docs.controlDocs.map((doc) => doc.type))
-  assert.equal(types.size, 15)
+  assert.equal(types.size, 14)
   for (const doc of docs.controlDocs) {
     assert.doesNotThrow(() => render(doc.examples, doc.data), doc.type)
   }
@@ -241,25 +241,30 @@ test('date values are validated and bound number fields update', () => {
   assert.throws(() => values.updateData(data, 'hobby', 25681118), /does not match/)
 })
 
-test('password control hides text by default and has a toggle button', () => {
+test('textbox with input_type password hides text and has a toggle button', () => {
   const html = render([
-    { type: 'password', id: 'p1', label: 'Pwd', value: 'secret' },
+    { type: 'textbox', input_type: 'password', id: 'p1', label: 'Pwd', value: 'secret' },
     { type: 'textbox', id: 't', value: 'plain' },
   ])
   assert.match(html, /id="p1"[^>]*type="password"/)
   assert.match(html, /<button type="button" class="btn btn-outline-secondary">แสดง<\/button>/)
   assert.match(html, /id="t"[^>]*type="text"/)
   assert.equal(html.match(/type="password"/g).length, 1)
+  // Only the password textbox gets the toggle, and its label is rendered once.
+  assert.equal(html.match(/<button/g).length, 1)
+  assert.equal(html.match(/for="p1"/g).length, 1)
 })
 
-test('password binds to a string data field', () => {
-  const html = render([{ type: 'password', id: 'p', databinding: 'fname', value: 'ignored' }], data)
+test('password textbox binds to a string data field', () => {
+  const html = render([{ type: 'textbox', input_type: 'password', id: 'p', databinding: 'fname', value: 'ignored' }], data)
   assert.match(html, /value="piyavach"/)
   assert.doesNotMatch(html, /ignored/)
 })
 
 test('unsupported control types fail explicitly', () => {
   assert.throws(() => render([{ type: 'nope' }]), /Unsupported control type: nope/)
+  // password is now textbox + input_type: 'password', not a control of its own.
+  assert.throws(() => render([{ type: 'password', id: 'p' }]), /Unsupported control type: password/)
 })
 
 // ---- validation: required ----
@@ -275,8 +280,8 @@ test('isEmptyValue treats blank text, null and no selection as empty', () => {
 
 test('validateControl checks required text controls', () => {
   const { REQUIRED_TEXT_MESSAGE } = validation
-  for (const type of ['textbox', 'password', 'textarea']) {
-    const config = { type, id: 't', required: true }
+  for (const [type, input_type] of [['textbox'], ['textbox', 'password'], ['textarea']]) {
+    const config = { type, input_type, id: 't', required: true }
     assert.equal(validation.validateControl({ ...config, value: '' }), REQUIRED_TEXT_MESSAGE, type)
     assert.equal(validation.validateControl(config), REQUIRED_TEXT_MESSAGE, `${type} without value`)
     assert.equal(validation.validateControl({ ...config, value: '  ' }), REQUIRED_TEXT_MESSAGE, `${type} spaces`)
@@ -375,7 +380,7 @@ test('demo form is valid with its data and invalid once the data is cleared', ()
 
 const requiredControls = [
   { type: 'textbox', id: 'tb', label: 'TB', required: true, value: '' },
-  { type: 'password', id: 'pw', label: 'PW', required: true, value: '' },
+  { type: 'textbox', input_type: 'password', id: 'pw', label: 'PW', required: true, value: '' },
   { type: 'textarea', id: 'ta', label: 'TA', required: true, value: '' },
   { type: 'date', id: 'dt', label: 'DT', required: true },
   { type: 'dropdown', id: 'dd', label: 'DD', required: true, options: ['a', 'b'] },

@@ -43,7 +43,6 @@ function checkRequired(
 export function validateControl(config: ControlConfig, data?: FormData): string | null {
   switch (config.type) {
     case 'textbox':
-    case 'password':
     case 'textarea':
       return checkRequired(config, getTextValue(config, data), REQUIRED_TEXT_MESSAGE)
     case 'date':
