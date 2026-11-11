@@ -25,7 +25,24 @@ interface RequiredRule {
   required_message?: string
 }
 
-export type TextboxConfig = BaseControl & RequiredRule & {
+// Ready-made formats for text: see TEXT_FORMATS in libs/validation.ts.
+export type TextFormat = 'email' | 'phone_th' | 'thai_id' | 'postcode_th' | 'digits'
+
+// Length and format checks for text controls. An empty value skips them (use `required`).
+interface TextRules {
+  // Characters, counted the way they are typed (each Thai vowel / tone mark is one).
+  min_length?: number
+  max_length?: number
+  format?: TextFormat
+  // A regular expression the whole value must match (no ^ / $ needed).
+  pattern?: string
+  min_length_message?: string
+  max_length_message?: string
+  // Replaces the message for `format` and `pattern`.
+  pattern_message?: string
+}
+
+export type TextboxConfig = BaseControl & RequiredRule & TextRules & {
   type: 'textbox'
   label?: string
   value?: string
@@ -89,7 +106,7 @@ export type DateTimeConfig = BaseControl & RequiredRule & {
   minute_step?: number
 }
 
-export type TextareaConfig = BaseControl & RequiredRule & {
+export type TextareaConfig = BaseControl & RequiredRule & TextRules & {
   type: 'textarea'
   label?: string
   value?: string

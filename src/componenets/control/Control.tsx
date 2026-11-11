@@ -17,6 +17,16 @@ export function RequiredMark() {
   return <span className="text-danger ms-1" aria-hidden="true">*</span>
 }
 
+// "12/100" under a text field that has max_length.
+export function CharCounter({ id, length, max }: { id: string, length: number, max?: number }) {
+  if (max === undefined) return null
+  return (
+    <div id={`${id}-count`} className={`form-text text-end mt-1${length > max ? ' text-danger' : ''}`}>
+      {length}/{max}
+    </div>
+  )
+}
+
 export function FieldError({ id, error }: { id: string, error?: string }) {
   if (!error) return null
   return <div id={`${id}-error`} className="invalid-feedback d-block">{error}</div>

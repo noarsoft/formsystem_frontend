@@ -23,6 +23,23 @@ const bindingProp: PropDoc = {
   description: 'key ใน data ที่ control นี้อ่าน/เขียน ถ้าระบุ ค่าใน data จะชนะ value ที่เขียนใน schema เสมอ',
 }
 
+// Length / format / pattern props shared by textbox and textarea.
+const textRuleProps: PropDoc[] = [
+  { name: 'min_length', type: 'number', description: 'จำนวนตัวอักษรขั้นต่ำ (นับตามที่พิมพ์ สระ/วรรณยุกต์ไทยนับ 1) ค่าว่างไม่ถูกตรวจ' },
+  { name: 'max_length', type: 'number', description: 'จำนวนตัวอักษรสูงสุด พิมพ์เกินไม่ได้ และแสดงตัวนับ "12/100" ใต้ช่อง' },
+  {
+    name: 'format',
+    type: "'email' | 'phone_th' | 'thai_id' | 'postcode_th' | 'digits'",
+    description:
+      'รูปแบบสำเร็จรูป: อีเมล, มือถือ 10 หลัก (06/08/09), เลขบัตรประชาชน 13 หลัก (เช็กเลขหลักสุดท้าย), ' +
+      'รหัสไปรษณีย์ 5 หลัก, ตัวเลขล้วน เบอร์โทรและเลขบัตรพิมพ์ขีด/เว้นวรรคได้',
+  },
+  { name: 'pattern', type: 'string', description: 'regex ที่ค่าทั้งหมดต้องตรง (ไม่ต้องใส่ ^ $) เช่น "EMP[0-9]{3}" regex ผิดจะ throw error' },
+  { name: 'min_length_message', type: 'string', description: 'ข้อความแทน "ต้องมีอย่างน้อย N ตัวอักษร"' },
+  { name: 'max_length_message', type: 'string', description: 'ข้อความแทน "ต้องไม่เกิน N ตัวอักษร"' },
+  { name: 'pattern_message', type: 'string', description: 'ข้อความแทนข้อความเตือนของ format และ pattern' },
+]
+
 const requiredProps: PropDoc[] = [
   {
     name: 'required',
@@ -64,6 +81,7 @@ export const controlDocs: ControlDoc[] = [
       { name: 'input_type', type: "'text' | 'password' | 'email' | 'number' | 'tel' | 'url'", default: "'text'", description: "ชนิดของ input ('password' = ช่องรหัสผ่านพร้อมปุ่มแสดง/ซ่อน)" },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'ปิดการแก้ไข' },
       ...requiredProps,
+      ...textRuleProps,
       bindingProp,
     ],
     examples: [
@@ -72,6 +90,12 @@ export const controlDocs: ControlDoc[] = [
       {
         type: 'textbox', id: 'ex_textbox_required', label: 'อีเมล (required — ลบข้อความออกเพื่อดูข้อความแจ้งเตือน)',
         input_type: 'email', required: true, required_message: 'กรุณากรอกอีเมล', value: 'a@b.c',
+      },
+      { type: 'textbox', id: 'ex_textbox_phone', label: 'เบอร์มือถือ (format: phone_th)', format: 'phone_th', value: '081-234-567' },
+      { type: 'textbox', id: 'ex_textbox_thai_id', label: 'เลขบัตรประชาชน (format: thai_id)', format: 'thai_id', value: '' },
+      {
+        type: 'textbox', id: 'ex_textbox_pattern', label: 'รหัสพนักงาน (pattern + min/max_length)',
+        pattern: 'EMP[0-9]{3}', pattern_message: 'รหัสต้องเป็น EMP ตามด้วยตัวเลข 3 หลัก', min_length: 6, max_length: 6, value: 'EMP12',
       },
       {
         type: 'textbox', id: 'ex_textbox_password', label: 'รหัสผ่าน', input_type: 'password',
@@ -221,10 +245,15 @@ export const controlDocs: ControlDoc[] = [
       { name: 'rows', type: 'number', default: '3', description: 'จำนวนบรรทัดที่แสดง' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'ปิดการแก้ไข' },
       ...requiredProps,
+      ...textRuleProps,
       bindingProp,
     ],
     examples: [
       { type: 'textarea', id: 'ex_textarea', label: 'หมายเหตุ', placeholder: 'พิมพ์หมายเหตุ', rows: 3, value: '' },
+      {
+        type: 'textarea', id: 'ex_textarea_limit', label: 'รายละเอียด (min_length 10, max_length 100)',
+        min_length: 10, max_length: 100, value: 'สั้นไป',
+      },
     ],
   },
   {

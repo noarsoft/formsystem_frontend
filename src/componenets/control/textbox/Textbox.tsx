@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import Control from '../Control'
+import Control, { CharCounter } from '../Control'
 import Button from '../button/Button'
 import type { ComponentStyle } from '../../Component'
-import { invalidProps } from '../../libs/validation'
+import { invalidProps, textLength } from '../../libs/validation'
 
 interface TextboxProps {
   id: string
@@ -14,12 +14,16 @@ interface TextboxProps {
   disabled?: boolean
   required?: boolean
   error?: string
+  // Stops typing past this many characters and shows a "12/100" counter.
+  maxLength?: number
+  // Keyboard hint on phones, e.g. 'numeric' for digit formats.
+  inputMode?: 'text' | 'numeric' | 'tel' | 'email'
   style?: ComponentStyle
   onChange: (value: string) => void
 }
 
 export default function Textbox({
-  id, label, value, placeholder, inputType = 'text', disabled, required, error, style, onChange,
+  id, label, value, placeholder, inputType = 'text', disabled, required, error, maxLength, inputMode, style, onChange,
 }: TextboxProps) {
   // Whether a password is currently shown; screen state only, never saved to JSON or data.
   const [visible, setVisible] = useState(false)
@@ -33,6 +37,8 @@ export default function Textbox({
       value={value}
       placeholder={placeholder}
       disabled={disabled}
+      maxLength={maxLength}
+      inputMode={inputMode}
       {...invalidProps(id, required, error)}
       onChange={(event) => onChange(event.currentTarget.value)}
     />
@@ -51,6 +57,7 @@ export default function Textbox({
           />
         </div>
       ) : input}
+      <CharCounter id={id} length={textLength(value)} max={maxLength} />
     </Control>
   )
 }

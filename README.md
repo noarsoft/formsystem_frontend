@@ -115,5 +115,16 @@ const errors = validateForm(form, data)
 <button onClick={() => { setSubmitted(true); if (errors.length === 0) save(data) }}>Submit</button>
 ```
 
+`textbox` and `textarea` also take `min_length` / `max_length` (characters as
+typed; `max_length` stops typing at the limit and shows a `12/100` counter),
+`format` (`email`, `phone_th` = 10-digit mobile starting 06/08/09, `thai_id` =
+13 digits with the check digit verified, `postcode_th`, `digits`; dashes and
+spaces are allowed in phone numbers and IDs) and `pattern` (a regular expression
+the whole value must match, no `^`/`$` needed). Checks run required → length →
+format → pattern and show the first failure; an empty optional field passes.
+Override the messages with `min_length_message`, `max_length_message` and
+`pattern_message`. An unknown format, a broken pattern or `min_length` >
+`max_length` throws.
+
 `style` (on any control) accepts `padding`, `margin`, `font_size`, `color`, and
 `border`; `front_size` and `boarder` are accepted as aliases.

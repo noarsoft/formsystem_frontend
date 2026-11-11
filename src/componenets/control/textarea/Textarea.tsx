@@ -1,5 +1,5 @@
-import Control from '../Control'
-import { invalidProps } from '../../libs/validation'
+import Control, { CharCounter } from '../Control'
+import { invalidProps, textLength } from '../../libs/validation'
 import type { ComponentStyle } from '../../Component'
 
 interface TextareaProps {
@@ -11,12 +11,16 @@ interface TextareaProps {
   disabled?: boolean
   required?: boolean
   error?: string
+  // Stops typing past this many characters and shows a "12/100" counter.
+  maxLength?: number
+  // Keyboard hint on phones, e.g. 'numeric' for digit formats.
+  inputMode?: 'text' | 'numeric' | 'tel' | 'email'
   style?: ComponentStyle
   onChange: (value: string) => void
 }
 
 export default function Textarea({
-  id, label, value, placeholder, rows = 3, disabled, required, error, style, onChange,
+  id, label, value, placeholder, rows = 3, disabled, required, error, maxLength, inputMode, style, onChange,
 }: TextareaProps) {
   return (
     <Control id={id} label={label} style={style} required={required} error={error}>
@@ -27,9 +31,12 @@ export default function Textarea({
         value={value}
         placeholder={placeholder}
         disabled={disabled}
+        maxLength={maxLength}
+        inputMode={inputMode}
         {...invalidProps(id, required, error)}
         onChange={(event) => onChange(event.currentTarget.value)}
       />
+      <CharCounter id={id} length={textLength(value)} max={maxLength} />
     </Control>
   )
 }

@@ -1,4 +1,4 @@
-import type { ControlConfig, FormData, FormDocument } from './controlTypes'
+import type { ControlConfig, FormData, FormDocument, TextareaConfig, TextboxConfig, TextFormat } from './controlTypes'
 import {
   getChoiceState, getDateRangeValue, getDateTimeValue, getDateValue, getSwitchValue, getTextValue, getTimeValue,
 } from './controlValues'
@@ -28,6 +28,98 @@ export function invalidProps(id: string, required?: boolean, error?: string) {
   }
 }
 
+// Thai national ID: 13 digits; the last is (11 - Σ digit[i] × (13 - i) for i = 0..11 mod 11) mod 10.
+export function isValidThaiId(digits: string): boolean {
+  if (!/^\d{13}$/.test(digits)) return false
+  const sum = [...digits.slice(0, 12)].reduce((total, digit, i) => total + Number(digit) * (13 - i), 0)
+  return (11 - (sum % 11)) % 10 === Number(digits[12])
+}
+
+// Dashes and spaces people type in phone numbers and IDs ("081-234-5678") are ignored when checking.
+const withoutSeparators = (value: string) => value.replace(/[\s-]/g, '')
+
+export const TEXT_FORMATS: Record<TextFormat, { name: string, message: string, test: (value: string) => boolean }> = {
+  email: {
+    name: 'อีเมล',
+    message: 'อีเมลไม่ถูกต้อง',
+    test: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+  },
+  phone_th: {
+    name: 'เบอร์มือถือ (10 หลัก)',
+    message: 'เบอร์โทรต้องเป็นตัวเลข 10 หลัก ขึ้นต้นด้วย 06, 08 หรือ 09',
+    test: (value) => /^0[689]\d{8}$/.test(withoutSeparators(value)),
+  },
+  thai_id: {
+    name: 'เลขบัตรประชาชน (13 หลัก)',
+    message: 'เลขบัตรประชาชนไม่ถูกต้อง',
+    test: (value) => isValidThaiId(withoutSeparators(value)),
+  },
+  postcode_th: {
+    name: 'รหัสไปรษณีย์ (5 หลัก)',
+    message: 'รหัสไปรษณีย์ต้องเป็นตัวเลข 5 หลัก',
+    test: (value) => /^\d{5}$/.test(value.trim()),
+  },
+  digits: {
+    name: 'ตัวเลขล้วน',
+    message: 'กรอกได้เฉพาะตัวเลข',
+    test: (value) => /^\d+$/.test(value),
+  },
+}
+
+// Phone keyboards: digits for number formats, the @ keyboard for email.
+export function inputModeFor(format: TextFormat | undefined): 'numeric' | 'tel' | 'email' | undefined {
+  if (format === 'phone_th') return 'tel'
+  if (format === 'email') return 'email'
+  if (format === 'thai_id' || format === 'postcode_th' || format === 'digits') return 'numeric'
+  return undefined
+}
+
+export const DEFAULT_PATTERN_MESSAGE = 'รูปแบบไม่ถูกต้อง'
+export const minLengthMessage = (n: number) => `ต้องมีอย่างน้อย ${n} ตัวอักษร`
+export const maxLengthMessage = (n: number) => `ต้องไม่เกิน ${n} ตัวอักษร`
+
+// Characters as typed: code points, so each Thai vowel / tone mark counts as one.
+export const textLength = (value: string) => [...value].length
+
+function checkLengthSetting(name: string, key: string, n: number | undefined) {
+  if (n !== undefined && (!Number.isInteger(n) || n < 0)) {
+    throw new Error(`Control "${name}" ${key} must be an integer >= 0`)
+  }
+}
+
+// Length, format and pattern checks for a non-empty text value (empty is left to `required`).
+// A bad setting (unknown format, broken pattern, min > max) throws instead of being ignored.
+export function textRuleError(config: TextboxConfig | TextareaConfig, value: string): string | null {
+  const name = config.id ?? config.type
+  const { min_length: min, max_length: max, format, pattern } = config
+  checkLengthSetting(name, 'min_length', min)
+  checkLengthSetting(name, 'max_length', max)
+  if (min !== undefined && max !== undefined && min > max) {
+    throw new Error(`Control "${name}" min_length (${min}) is greater than max_length (${max})`)
+  }
+  if (format !== undefined && !(format in TEXT_FORMATS)) {
+    throw new Error(`Control "${name}" has an unknown format "${String(format)}"`)
+  }
+  let regex: RegExp | null = null
+  if (pattern !== undefined) {
+    try {
+      regex = new RegExp(`^(?:${pattern})$`, 'u')
+    } catch (error) {
+      throw new Error(`Control "${name}" has an invalid pattern: ${(error as Error).message}`, { cause: error })
+    }
+  }
+
+  if (value.trim() === '') return null
+  const length = textLength(value)
+  if (min !== undefined && length < min) return config.min_length_message ?? minLengthMessage(min)
+  if (max !== undefined && length > max) return config.max_length_message ?? maxLengthMessage(max)
+  if (format !== undefined && !TEXT_FORMATS[format].test(value)) {
+    return config.pattern_message ?? TEXT_FORMATS[format].message
+  }
+  if (regex && !regex.test(value)) return config.pattern_message ?? DEFAULT_PATTERN_MESSAGE
+  return null
+}
+
 // '' / whitespace-only text, a null date and a choice with no 1 all count as empty.
 export function isEmptyValue(value: FieldValue): boolean {
   if (value === null) return true
@@ -50,8 +142,11 @@ function checkRequired(
 export function validateControl(config: ControlConfig, data?: FormData): string | null {
   switch (config.type) {
     case 'textbox':
-    case 'textarea':
-      return checkRequired(config, getTextValue(config, data), REQUIRED_TEXT_MESSAGE)
+    case 'textarea': {
+      // Order: required, then length, then format / pattern; the first failure is shown.
+      const value = getTextValue(config, data)
+      return checkRequired(config, value, REQUIRED_TEXT_MESSAGE) ?? textRuleError(config, value)
+    }
     case 'date':
       return checkRequired(config, getDateValue(config, data), REQUIRED_DATE_MESSAGE)
     case 'date_range': {

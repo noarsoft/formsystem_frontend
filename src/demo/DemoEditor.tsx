@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import FormBuilder from '../componenets/libs/Formbuilder'
-import type { ControlConfig, FormData, FormDocument } from '../componenets/libs/controlTypes'
-import { validateForm } from '../componenets/libs/validation'
+import type { ControlConfig, FormData, FormDocument, TextFormat } from '../componenets/libs/controlTypes'
+import { TEXT_FORMATS, validateForm } from '../componenets/libs/validation'
 import {
   addControl, ADDABLE_TYPES, CHOICE_TYPES, findGrid, freeCells, listControls, removeControl,
 } from './editor'
@@ -13,6 +13,7 @@ interface DemoEditorProps {
   onChange: (form: FormDocument, data: FormData) => void
 }
 
+const formats = Object.keys(TEXT_FORMATS) as TextFormat[]
 const cellKey = (cell: Cell) => `${cell.colno},${cell.rowno}`
 const oneHot = (count: number, index: number) => Array.from({ length: count }, (_, i) => (i === index ? 1 : 0))
 
@@ -37,6 +38,8 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
   const [optionsText, setOptionsText] = useState('')
   const [cell, setCell] = useState<string | null>(null)
   const [required, setRequired] = useState<0 | 1>(0)
+  // Index into `formats`, or -1 for none (textbox only).
+  const [formatIndex, setFormatIndex] = useState(-1)
   const [showErrors, setShowErrors] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   // Bumped after a successful add to remount the fields, so cleared fields don't show errors.
@@ -73,6 +76,10 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
           type: 'textbox' as const, id: 'new_options', label: 'ตัวเลือก (คั่นด้วย ,)', placeholder: 'เช่น ชาย, หญิง',
           databinding: 'new_options', required: true, colno: 1, rowno: 1,
         }] : []),
+        ...(type === 'textbox' ? [{
+          type: 'dropdown' as const, id: 'new_format', label: 'รูปแบบข้อมูล (format)', databinding: 'new_format',
+          colno: 1, rowno: 1,
+        }] : []),
         ...(isLabel ? [] : [{
           type: 'switch' as const, id: 'new_required', text: 'บังคับกรอก (required)', databinding: 'new_required',
           colno: 0, rowno: 2,
@@ -86,6 +93,9 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
     new_label: { type: 'string', value: label },
     new_options: { type: 'string', value: optionsText },
     new_required: { type: 'number', value: required },
+    new_format: {
+      type: 'number', is_array: 1, options: formats.map((f) => TEXT_FORMATS[f].name), value: oneHot(formats.length, formatIndex),
+    },
   }
 
   const onEditorData = (next: FormData) => {
@@ -99,6 +109,7 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
     setLabel(text('new_label'))
     setOptionsText(text('new_options'))
     setRequired(next.new_required.value === 1 ? 1 : 0)
+    setFormatIndex(pick('new_format'))
     setMessage(null)
   }
 
@@ -114,9 +125,11 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
     }
     const result = addControl(form, data, {
       type, label: label.trim(), required: required === 1, options, cell: cells[cellIndex].cell,
+      format: type === 'textbox' && formatIndex >= 0 ? formats[formatIndex] : undefined,
     })
     onChange(result.form, result.data)
     setLabel('')
+    setFormatIndex(-1)
     setOptionsText('')
     setCell(null)
     setShowErrors(false)

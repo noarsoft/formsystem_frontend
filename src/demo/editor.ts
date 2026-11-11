@@ -1,5 +1,5 @@
 // Pure helpers for the Demo page's form editor: add a control to the grid, remove one.
-import type { ControlConfig, FormData, FormDocument, GridConfig } from '../componenets/libs/controlTypes'
+import type { ControlConfig, FormData, FormDocument, GridConfig, TextFormat } from '../componenets/libs/controlTypes'
 
 export const ADDABLE_TYPES = [
   { type: 'textbox', name: 'ช่องข้อความ (textbox)' },
@@ -31,6 +31,8 @@ export interface NewControl {
   // Choice controls only.
   options: string[]
   cell: Cell
+  // textbox only: a ready-made format such as phone_th.
+  format?: TextFormat
 }
 
 // The editor works on the first grid at the top of the form.
@@ -110,6 +112,10 @@ function newControl(input: NewControl, id: string): { control: ControlConfig, fi
   const base = { id, label, ...(required ? { required: true } : {}), ...cell }
   switch (type) {
     case 'textbox':
+      return {
+        control: { ...base, type, databinding: id, ...(input.format ? { format: input.format } : {}) },
+        fields: { [id]: { type: 'string', value: '' } },
+      }
     case 'textarea':
       return { control: { ...base, type, databinding: id }, fields: { [id]: { type: 'string', value: '' } } }
     case 'date':

@@ -25,7 +25,7 @@ import {
 } from './controlValues'
 import type { FieldValue } from './controlValues'
 import { useFormContext } from './formContext'
-import { validateControl } from './validation'
+import { inputModeFor, validateControl } from './validation'
 
 export interface ControlRendererProps {
   config: ControlConfig
@@ -72,6 +72,8 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       return (
         <Textbox
           id={id}
+          maxLength={config.max_length}
+          inputMode={inputModeFor(config.format)}
           label={config.label}
           required={config.required}
           error={error}
@@ -163,6 +165,8 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       return (
         <Textarea
           id={id}
+          maxLength={config.max_length}
+          inputMode={inputModeFor(config.format)}
           label={config.label}
           required={config.required}
           error={error}

@@ -749,3 +749,108 @@ test('demo editor panel renders the add fields and one remove button per control
   assert.match(html, /aria-label="ลบ flex \(ไม่มีชื่อ\)"/)
   assert.match(html, /aria-label="ลบ textbox Textbox 1"/)
 })
+
+// ---- text rules: min_length / max_length / format / pattern ----
+
+const tb = (extra) => ({ type: 'textbox', id: 't', ...extra })
+
+test('Thai ID check digit and the ready-made formats', () => {
+  for (const ok of ['1101700230708', '3100500123458', '1234567890121']) assert.equal(validation.isValidThaiId(ok), true, ok)
+  for (const bad of ['1101700230709', '110170023070', '11017002307080', '110170023070a']) assert.equal(validation.isValidThaiId(bad), false, bad)
+  const { TEXT_FORMATS: F } = validation
+  assert.ok(F.email.test('a.b@c.co.th'))
+  for (const bad of ['a@b', 'a b@c.d', '@c.d', 'a@.']) assert.equal(F.email.test(bad), false, bad)
+  for (const ok of ['0812345678', '081-234-5678', '06 1234 5678', '0912345678']) assert.ok(F.phone_th.test(ok), ok)
+  for (const bad of ['021234567', '0712345678', '081234567', '08123456789', '08a2345678']) assert.equal(F.phone_th.test(bad), false, bad)
+  assert.ok(F.thai_id.test('1-1017-00230-70-8'))
+  assert.ok(F.thai_id.test('1 1017 00230 70 8'))
+  assert.ok(F.postcode_th.test('50200'))
+  for (const bad of ['5020', '502000', 'ab200']) assert.equal(F.postcode_th.test(bad), false, bad)
+  assert.ok(F.digits.test('0123'))
+  for (const bad of ['12a', '1 2', '-1', '1.5']) assert.equal(F.digits.test(bad), false, bad)
+})
+
+test('length rules count characters as typed and skip empty values', () => {
+  assert.equal(validation.textLength('สวัสดี'), 6)
+  assert.equal(validation.validateControl(tb({ min_length: 3, value: 'ab' })), 'ต้องมีอย่างน้อย 3 ตัวอักษร')
+  assert.equal(validation.validateControl(tb({ min_length: 3, value: 'abc' })), null)
+  assert.equal(validation.validateControl(tb({ max_length: 5, value: 'สวัสดีครับ' })), 'ต้องไม่เกิน 5 ตัวอักษร')
+  assert.equal(validation.validateControl(tb({ max_length: 6, value: 'สวัสดี' })), null)
+  assert.equal(validation.validateControl(tb({ min_length: 3, min_length_message: 'สั้นไป', value: 'a' })), 'สั้นไป')
+  assert.equal(validation.validateControl(tb({ max_length: 1, max_length_message: 'ยาวไป', value: 'ab' })), 'ยาวไป')
+  // Empty and not required: no length or format error.
+  assert.equal(validation.validateControl(tb({ min_length: 3, format: 'email', value: '' })), null)
+  assert.equal(validation.validateControl(tb({ min_length: 3, format: 'email', value: '   ' })), null)
+  // Empty and required: the required message wins.
+  assert.equal(validation.validateControl(tb({ required: true, min_length: 3, value: '' })), validation.REQUIRED_TEXT_MESSAGE)
+  assert.equal(validation.validateControl({ type: 'textarea', max_length: 3, value: 'abcd' }), 'ต้องไม่เกิน 3 ตัวอักษร')
+})
+
+test('format and pattern messages, order of checks, and bound values', () => {
+  assert.equal(validation.validateControl(tb({ format: 'phone_th', value: '021234567' })), validation.TEXT_FORMATS.phone_th.message)
+  assert.equal(validation.validateControl(tb({ format: 'thai_id', value: '1-1017-00230-70-8' })), null)
+  assert.equal(validation.validateControl(tb({ format: 'thai_id', value: '1101700230709' })), 'เลขบัตรประชาชนไม่ถูกต้อง')
+  assert.equal(validation.validateControl(tb({ format: 'email', pattern_message: 'อีเมลผิด', value: 'x' })), 'อีเมลผิด')
+  // pattern must match the whole value; ^ and $ are implied.
+  assert.equal(validation.validateControl(tb({ pattern: 'EMP[0-9]{3}', value: 'EMP123' })), null)
+  assert.equal(validation.validateControl(tb({ pattern: 'EMP[0-9]{3}', value: 'xEMP123' })), validation.DEFAULT_PATTERN_MESSAGE)
+  assert.equal(validation.validateControl(tb({ pattern: 'EMP[0-9]{3}', value: 'EMP1234' })), validation.DEFAULT_PATTERN_MESSAGE)
+  assert.equal(validation.validateControl(tb({ pattern: 'a|b', value: 'ab' })), validation.DEFAULT_PATTERN_MESSAGE)
+  // Thai letters, vowels and tone marks (U+0E01–U+0E4E); [ก-ฮ] alone would miss the vowel า.
+  assert.equal(validation.validateControl(tb({ pattern: '[ก-๎]+', value: 'สมชาย' })), null)
+  assert.equal(validation.validateControl(tb({ pattern: '[ก-ฮ]+', value: 'สมชาย' })), validation.DEFAULT_PATTERN_MESSAGE)
+  // Length is checked before format / pattern.
+  assert.equal(validation.validateControl(tb({ min_length: 6, pattern: 'EMP[0-9]{3}', value: 'EMP1' })), 'ต้องมีอย่างน้อย 6 ตัวอักษร')
+  // Format before pattern.
+  assert.equal(validation.validateControl(tb({ format: 'digits', pattern: '9.*', value: 'x1' })), 'กรอกได้เฉพาะตัวเลข')
+  assert.equal(validation.validateControl(tb({ format: 'digits', pattern: '9.*', value: '11' })), validation.DEFAULT_PATTERN_MESSAGE)
+  // Bound text is what gets checked.
+  const bound = tb({ databinding: 'fname', format: 'email', value: 'a@b.co' })
+  assert.equal(validation.validateControl(bound, data), 'อีเมลไม่ถูกต้อง')
+  assert.deepEqual(validation.validateForm({ controls: [{ type: 'card', controls: [bound] }] }, data), [{ id: 't', message: 'อีเมลไม่ถูกต้อง' }])
+})
+
+test('bad text rule settings throw instead of being ignored', () => {
+  assert.throws(() => validation.validateControl(tb({ min_length: 5, max_length: 3 })), /min_length \(5\) is greater than max_length \(3\)/)
+  assert.throws(() => validation.validateControl(tb({ min_length: -1 })), /min_length must be an integer >= 0/)
+  assert.throws(() => validation.validateControl(tb({ max_length: 2.5 })), /max_length must be an integer >= 0/)
+  assert.throws(() => validation.validateControl(tb({ format: 'phone' })), /unknown format "phone"/)
+  assert.throws(() => validation.validateControl(tb({ pattern: '[0-9' })), /invalid pattern/)
+  // Even with an empty value, so a broken schema is noticed right away.
+  assert.throws(() => render([tb({ pattern: '(' })]), /invalid pattern/)
+})
+
+test('max_length limits typing and shows a counter; number formats hint the keyboard', () => {
+  const html = render([
+    tb({ id: 'a', max_length: 10, value: 'สวัสดี' }),
+    { type: 'textarea', id: 'b', max_length: 100, value: '' },
+    tb({ id: 'c', format: 'phone_th' }),
+    tb({ id: 'd', format: 'thai_id' }),
+    tb({ id: 'e', format: 'email' }),
+    tb({ id: 'f', input_type: 'password', max_length: 8, value: '' }),
+  ])
+  assert.match(html, /id="a"[^>]*maxLength="10"/)
+  assert.match(html, /<div id="a-count" class="form-text text-end mt-1">6\/10<\/div>/)
+  assert.match(html, /<textarea id="b"[^>]*maxLength="100"/)
+  assert.match(html, /id="b-count"[^>]*>0\/100</)
+  assert.match(html, /id="c"[^>]*inputMode="tel"/)
+  assert.match(html, /id="d"[^>]*inputMode="numeric"/)
+  assert.match(html, /id="e"[^>]*inputMode="email"/)
+  assert.match(html, /id="f-count"/)
+  assert.doesNotMatch(render([tb({ id: 'g' })]), /-count|maxLength|inputMode/)
+  // Over the limit (e.g. loaded data): red counter and a message.
+  const over = render([tb({ id: 'h', max_length: 3, value: 'abcd' })], undefined, { showErrors: true })
+  assert.match(over, /id="h-count" class="form-text text-end mt-1 text-danger"/)
+  assert.match(over, /<div id="h-error" class="invalid-feedback d-block">ต้องไม่เกิน 3 ตัวอักษร<\/div>/)
+})
+
+test('demo editor can add a textbox with a format', () => {
+  const added = editor.addControl(demoForm(), demoData(), {
+    type: 'textbox', label: 'มือถือ', required: false, options: [], cell: { colno: 1, rowno: 0 }, format: 'phone_th',
+  })
+  assert.equal(editor.findGrid(added.form).grid.controls.at(-1).format, 'phone_th')
+  const plain = editor.addControl(demoForm(), demoData(), {
+    type: 'textarea', label: 'x', required: false, options: [], cell: { colno: 1, rowno: 0 }, format: 'phone_th',
+  })
+  assert.equal('format' in editor.findGrid(plain.form).grid.controls.at(-1), false)
+})

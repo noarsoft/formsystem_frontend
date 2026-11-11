@@ -91,6 +91,11 @@ export default function ControlDocument() {
         <code>validateForm(form, data)</code> จาก <code>libs/validation.ts</code> ซึ่งคืนรายการ{' '}
         <code>{'{ id, message }'}</code> (อาร์เรย์ว่าง = ผ่าน)
       </p>
+      <p>
+        textbox และ textarea ตรวจเพิ่มได้ด้วย <code>min_length</code> / <code>max_length</code>,{' '}
+        <code>format</code> (email, phone_th, thai_id, postcode_th, digits) และ <code>pattern</code> (regex)
+        ตรวจตามลำดับ ห้ามว่าง → ความยาว → รูปแบบ แล้วแสดงข้อความแรกที่ไม่ผ่าน ค่าว่างที่ไม่ required ถือว่าผ่าน
+      </p>
 
       <h3 className="h4 mt-4">Properties ที่ทุก control ใช้ร่วมกัน</h3>
       <PropTable props={commonProps} />
