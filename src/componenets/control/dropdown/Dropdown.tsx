@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import Control from '../Control'
+import OtherInput from '../OtherInput'
+import type { OtherInputProps } from '../OtherInput'
 import { invalidProps } from '../../libs/validation'
 import type { ComponentStyle } from '../../Component'
 import '../controls.css'
@@ -13,6 +15,8 @@ interface DropdownProps {
   multiple?: boolean
   // Single mode only: show the "-- เลือก --" entry that clears the selection.
   clearable?: boolean
+  // "อื่น ๆ (โปรดระบุ)": a text box under the list while that option is selected.
+  other?: OtherInputProps
   // Greyed out, not focusable, does not open.
   disabled?: boolean
   // Focusable, does not open (view only).
@@ -33,7 +37,7 @@ const placeholder = '-- เลือก --'
 
 // A div-based combobox/listbox so the whole design can be styled freely.
 export default function Dropdown({
-  id, label, options, value, multiple = false, clearable = true, disabled, readOnly, required, error, style, onChange,
+  id, label, options, value, multiple = false, clearable = true, disabled, readOnly, required, error, other, style, onChange,
 }: DropdownProps) {
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
@@ -160,6 +164,18 @@ export default function Dropdown({
           </div>
         )}
       </div>
+      {other !== undefined && value[other.index] === 1 && (
+        <OtherInput
+          id={id}
+          optionText={options[other.index]}
+          text={other.text}
+          placeholder={other.placeholder}
+          invalid={other.invalid}
+          disabled={disabled}
+          readOnly={readOnly}
+          onChange={other.onChange}
+        />
+      )}
     </Control>
   )
 }

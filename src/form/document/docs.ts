@@ -47,6 +47,14 @@ const readonlyProp: PropDoc = {
   description: 'อ่านอย่างเดียว: หน้าตาปกติ โฟกัส/คัดลอกได้ แต่แก้ไม่ได้ และไม่ถูกตรวจ (ช่องวันที่/เวลาซ่อนปุ่ม)',
 }
 
+const otherProp: PropDoc = {
+  name: 'other',
+  type: '{ option?, databinding?, value?, placeholder?, required_message? }',
+  description:
+    '"อื่น ๆ (โปรดระบุ)": เมื่อเลือกตัวเลือก option (ค่าเริ่มต้น = ตัวสุดท้าย) จะมีช่องพิมพ์โผล่ ' +
+    'ข้อความเก็บที่ databinding (string) หรือ value เลือกแล้วไม่พิมพ์จะเตือน "กรุณาระบุ"',
+}
+
 const disabledChoiceProp: PropDoc = {
   name: 'disabled',
   type: 'boolean',
@@ -454,11 +462,16 @@ export const controlDocs: ControlDoc[] = [
       { name: 'value', type: 'number[]', default: 'ศูนย์ทุกตัว', description: 'อาร์เรย์ 0/1 ความยาวเท่ากับ options' },
       { name: 'multiple', type: 'boolean', default: 'false', description: 'เลือกได้หลายตัว' },
       disabledChoiceProp,
+      otherProp,
       ...requiredProps,
       bindingProp,
     ],
     examples: [
       { type: 'dropdown', id: 'ex_dropdown_single', label: 'เพศ', options: ['ชาย', 'หญิง'], value: [0, 1] },
+      {
+        type: 'dropdown', id: 'ex_dropdown_other', label: 'รู้จักเราจากที่ไหน (other)',
+        options: ['Facebook', 'เพื่อนแนะนำ', 'อื่น ๆ'], value: [0, 0, 1], other: { value: '', placeholder: 'เช่น ป้ายโฆษณา' },
+      },
       { type: 'dropdown', id: 'ex_dropdown_disabled', label: 'สาขา (disabled)', options: ['วิศวะ', 'บัญชี'], value: [1, 0], disabled: true },
       {
         type: 'dropdown', id: 'ex_dropdown_multi', label: 'ทักษะ (bind กับ skill)', multiple: true,
@@ -479,6 +492,7 @@ export const controlDocs: ControlDoc[] = [
       { name: 'value', type: 'number[]', default: 'ศูนย์ทุกตัว', description: 'อาร์เรย์ 0/1 ความยาวเท่ากับ options' },
       { name: 'inline', type: 'boolean', default: 'false', description: 'วางตัวเลือกเรียงในแนวนอน' },
       disabledChoiceProp,
+      otherProp,
       ...requiredProps,
       bindingProp,
     ],
@@ -487,10 +501,16 @@ export const controlDocs: ControlDoc[] = [
         type: 'checkbox_group', id: 'ex_checkbox_multi', label: 'งานอดิเรก',
         options: ['อ่านหนังสือ', 'ดนตรี', 'กีฬา'], value: [1, 0, 1], required: true,
       },
+      {
+        type: 'checkbox_group', id: 'ex_checkbox_other', label: 'ภาษาที่ใช้ได้ (other, bind กับ lang / lang_other)',
+        databinding: 'lang', other: { databinding: 'lang_other' },
+      },
       { type: 'checkbox_group', id: 'ex_checkbox_bound', label: 'Hobby (bind กับ hobby)', databinding: 'hobby', inline: true },
     ],
     data: {
       hobby: { type: 'number', is_array: 1, options: ['guitar', 'piano', 'violin'], value: [0, 1, 1] },
+      lang: { type: 'number', is_array: 1, options: ['ไทย', 'อังกฤษ', 'อื่น ๆ'], value: [1, 0, 1] },
+      lang_other: { type: 'string', value: '' },
     },
   },
   {
@@ -505,6 +525,7 @@ export const controlDocs: ControlDoc[] = [
       { name: 'value', type: 'number[]', default: 'ศูนย์ทุกตัว', description: 'อาร์เรย์ 0/1 ความยาวเท่ากับ options มี 1 ได้ไม่เกิน 1 ตัว' },
       { name: 'inline', type: 'boolean', default: 'false', description: 'วางตัวเลือกเรียงในแนวนอน' },
       disabledChoiceProp,
+      otherProp,
       ...requiredProps,
       bindingProp,
     ],
@@ -512,6 +533,10 @@ export const controlDocs: ControlDoc[] = [
       {
         type: 'option', id: 'ex_option', label: 'ระดับการศึกษา', inline: true,
         options: ['ปริญญาตรี', 'ปริญญาโท', 'ปริญญาเอก'], value: [1, 0, 0],
+      },
+      {
+        type: 'option', id: 'ex_option_other', label: 'เพศ (other)', inline: true,
+        options: ['ชาย', 'หญิง', 'อื่น ๆ'], value: [0, 0, 0], other: { value: '' },
       },
       {
         type: 'option', id: 'ex_option_readonly', label: 'สถานะ (readonly)', inline: true,

@@ -1237,3 +1237,59 @@ test('demo editor adds a matrix with one data key per row and removes them toget
   const removed = editor.removeControl(added.form, added.data, path)
   assert.deepEqual(Object.keys(removed.data), ['fname', 'hobby'])
 })
+
+// ---- "อื่น ๆ (โปรดระบุ)" ----
+
+const genderOther = (extra) => ({
+  type: 'option', id: 'g', label: 'เพศ', options: ['ชาย', 'หญิง', 'อื่น ๆ'], other: { value: '' }, ...extra,
+})
+
+test('other: state, required text and data binding', () => {
+  assert.deepEqual(values.getOtherState(genderOther(), ['ชาย', 'หญิง', 'อื่น ๆ'], [0, 0, 1]), { index: 2, selected: true, text: '' })
+  assert.equal(values.getOtherState({ type: 'option', options: ['a'] }, ['a'], [0]), null)
+  // Selected and blank fails, even when the control is not required; filled or unselected passes.
+  assert.equal(validation.validateControl(genderOther({ value: [0, 0, 1] })), 'กรุณาระบุ')
+  assert.equal(validation.validateControl(genderOther({ value: [0, 0, 1], other: { value: '  ' } })), 'กรุณาระบุ')
+  assert.equal(validation.validateControl(genderOther({ value: [0, 0, 1], other: { value: 'ไม่ระบุ' } })), null)
+  assert.equal(validation.validateControl(genderOther({ value: [1, 0, 0] })), null)
+  assert.equal(validation.validateControl(genderOther({ value: [0, 0, 1], other: { value: '', required_message: 'บอกหน่อย' } })), 'บอกหน่อย')
+  // required still comes first.
+  assert.equal(validation.validateControl(genderOther({ required: true })), validation.REQUIRED_CHOICE_MESSAGE)
+  // A chosen other option, a bound text field, and checkboxes.
+  const d = {
+    lang: { type: 'number', is_array: 1, options: ['ไทย', 'อื่น ๆ', 'อังกฤษ'], value: [1, 1, 0] },
+    lang_other: { type: 'string', value: 'ญี่ปุ่น' },
+  }
+  const cb = { type: 'checkbox_group', id: 'l', databinding: 'lang', other: { option: 'อื่น ๆ', databinding: 'lang_other' } }
+  assert.equal(validation.validateControl(cb, d), null)
+  assert.equal(validation.validateControl(cb, { ...d, lang_other: { type: 'string', value: '' } }), 'กรุณาระบุ')
+  // Mistakes throw.
+  assert.throws(() => validation.validateControl({ ...cb, other: { option: 'ลาว' } }, d), /other option "ลาว" is not one of its options/)
+  assert.throws(() => validation.validateControl({ ...cb, other: { databinding: 'lang' } }, d), /must be a string field/)
+  assert.throws(() => validation.validateControl({ ...cb, other: { databinding: 'nope' } }, d), /bound to "nope"/)
+})
+
+test('other: the text box appears right after the option only while it is selected', () => {
+  const off = render([genderOther({ value: [1, 0, 0] })])
+  assert.doesNotMatch(off, /g-other/)
+  const on = render([genderOther({ value: [0, 0, 1], other: { value: 'x', placeholder: 'ระบุเพศ' } })])
+  assert.match(on, /<span id="g-2-text">อื่น ๆ<\/span><\/div><input id="g-other" class="form-control form-control-sm fs-choice-other" type="text" placeholder="ระบุเพศ" aria-label="อื่น ๆ \(โปรดระบุ\)" value="x"\/>/)
+  const err = render([genderOther({ value: [0, 0, 1] })], undefined, { showErrors: true })
+  assert.match(err, /id="g-other" class="form-control form-control-sm fs-choice-other is-invalid"[^>]*aria-invalid="true" aria-describedby="g-error"/)
+  assert.match(err, /<div id="g-error" class="invalid-feedback d-block">กรุณาระบุ<\/div>/)
+  const dd = render([{ type: 'dropdown', id: 'd', options: ['a', 'อื่น ๆ'], value: [0, 1], other: { value: '' } }])
+  assert.match(dd, /<\/div><\/div><input id="d-other" class="form-control form-control-sm fs-choice-other"/)
+  const ro = render([genderOther({ value: [0, 0, 1], other: { value: 'x' }, readonly: true })])
+  assert.match(ro, /id="g-other"[^>]*readOnly=""/)
+})
+
+test('demo editor adds "อื่น ๆ" as the last option with its own text key', () => {
+  const added = editor.addControl(demoForm(), demoData(), {
+    type: 'option', label: 'เพศ', required: false, options: ['อื่น ๆ', 'ชาย', 'หญิง'], other: true, cell: { colno: 1, rowno: 0 },
+  })
+  assert.deepEqual(added.data.option_1.options, ['ชาย', 'หญิง', 'อื่น ๆ'])
+  assert.deepEqual(added.data.option_1_other, { type: 'string', value: '' })
+  assert.deepEqual(editor.findGrid(added.form).grid.controls.at(-1).other, { databinding: 'option_1_other' })
+  const path = editor.listControls(added.form).find((item) => item.control.id === 'option_1').path
+  assert.deepEqual(Object.keys(editor.removeControl(added.form, added.data, path).data), ['fname', 'hobby'])
+})

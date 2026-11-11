@@ -207,7 +207,22 @@ export type LabelConfig = BaseControl & {
   for?: string
 }
 
-export type DropdownConfig = BaseControl & InputRules & {
+// "อื่น ๆ (โปรดระบุ)": when `option` (default: the last option) is selected, a text box
+// appears for the details. Its text goes to `databinding` (a string field) or `value`.
+// Selected with the text left blank fails validation ("กรุณาระบุ").
+export interface OtherConfig {
+  option?: string
+  databinding?: string
+  value?: string
+  placeholder?: string
+  required_message?: string
+}
+
+interface ChoiceOther {
+  other?: OtherConfig
+}
+
+export type DropdownConfig = BaseControl & InputRules & ChoiceOther & {
   type: 'dropdown'
   label?: string
   options?: string[]
@@ -216,7 +231,7 @@ export type DropdownConfig = BaseControl & InputRules & {
   multiple?: boolean
 }
 
-export type CheckboxGroupConfig = BaseControl & InputRules & {
+export type CheckboxGroupConfig = BaseControl & InputRules & ChoiceOther & {
   type: 'checkbox_group'
   label?: string
   options?: string[]
@@ -225,7 +240,7 @@ export type CheckboxGroupConfig = BaseControl & InputRules & {
   inline?: boolean
 }
 
-export type OptionConfig = BaseControl & InputRules & {
+export type OptionConfig = BaseControl & InputRules & ChoiceOther & {
   type: 'option'
   label?: string
   options?: string[]

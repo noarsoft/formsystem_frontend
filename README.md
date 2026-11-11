@@ -165,5 +165,13 @@ so `visible_if` can use a single row's answer; inline rows use `value` instead.
 row answered and marks the missing ones. When the control is narrow (a container
 query, so it also works inside a half-width column) it shows one question at a time.
 
+`dropdown`, `checkbox_group` and `option` can offer "อื่น ๆ (โปรดระบุ)": put
+the option in `options` and add `"other": { "databinding": "gender_other" }`
+(or `"value": ""` to keep the text inline). While that option (`other.option`,
+default the last one) is selected a text box appears right after it; selected
+with the text left blank fails validation with "กรุณาระบุ" (`required_message`
+to change it). The text is kept when the option is unselected. The Demo editor
+has a switch to add it.
+
 `style` (on any control) accepts `padding`, `margin`, `font_size`, `color`, and
 `border`; `front_size` and `boarder` are accepted as aliases.

@@ -37,6 +37,7 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
   const [label, setLabel] = useState('')
   const [optionsText, setOptionsText] = useState('')
   const [rowsText, setRowsText] = useState('')
+  const [withOther, setWithOther] = useState<0 | 1>(0)
   const [cell, setCell] = useState<string | null>(null)
   const [required, setRequired] = useState<0 | 1>(0)
   // Index into `formats`, or -1 for none (textbox only).
@@ -83,6 +84,10 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
           type: 'textbox' as const, id: 'new_rows', label: 'คำถาม/แถว (คั่นด้วย ,)', placeholder: 'เช่น ความสะอาด, การบริการ',
           databinding: 'new_rows', required: true, colno: 1, rowno: 2,
         }] : []),
+        ...(isChoice && !isMatrix ? [{
+          type: 'switch' as const, id: 'new_other', text: 'มีตัวเลือก "อื่น ๆ (โปรดระบุ)"', databinding: 'new_other',
+          colno: 1, rowno: 2,
+        }] : []),
         ...(type === 'textbox' ? [{
           type: 'dropdown' as const, id: 'new_format', label: 'รูปแบบข้อมูล (format)', databinding: 'new_format',
           colno: 1, rowno: 1,
@@ -100,6 +105,7 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
     new_label: { type: 'string', value: label },
     new_options: { type: 'string', value: optionsText },
     new_rows: { type: 'string', value: rowsText },
+    new_other: { type: 'number', value: withOther },
     new_required: { type: 'number', value: required },
     new_format: {
       type: 'number', is_array: 1, options: formats.map((f) => TEXT_FORMATS[f].name), value: oneHot(formats.length, formatIndex),
@@ -117,6 +123,7 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
     setLabel(text('new_label'))
     setOptionsText(text('new_options'))
     setRowsText(text('new_rows'))
+    setWithOther(next.new_other.value === 1 ? 1 : 0)
     setRequired(next.new_required.value === 1 ? 1 : 0)
     setFormatIndex(pick('new_format'))
     setMessage(null)
@@ -142,6 +149,7 @@ export default function DemoEditor({ form, data, onChange }: DemoEditorProps) {
       type, label: label.trim(), required: required === 1, options, cell: cells[cellIndex].cell,
       format: type === 'textbox' && formatIndex >= 0 ? formats[formatIndex] : undefined,
       rows: isMatrix ? rows : undefined,
+      other: isChoice && !isMatrix && withOther === 1,
     })
     onChange(result.form, result.data)
     setLabel('')

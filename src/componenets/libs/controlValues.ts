@@ -55,6 +55,32 @@ function validateChoice(name: string, options: unknown, value: unknown, multiple
   }
 }
 
+export interface OtherState {
+  // Index of the "อื่น ๆ" option, and whether it is selected.
+  index: number
+  selected: boolean
+  text: string
+}
+
+// The "อื่น ๆ (โปรดระบุ)" part of a choice control, or null when it has none.
+export function getOtherState(config: ChoiceControl, options: string[], value: number[], data?: FormData): OtherState | null {
+  const other = config.other
+  if (other === undefined) return null
+  const option = other.option ?? options[options.length - 1]
+  const index = options.indexOf(option)
+  if (index < 0) {
+    throw new Error(`Control "${controlName(config)}" other option "${option}" is not one of its options`)
+  }
+  let text = other.value ?? ''
+  if (other.databinding !== undefined) {
+    const field = getField(config, other.databinding, data)
+    if (field.type !== 'string') throw new Error(`Data binding "${other.databinding}" must be a string field`)
+    text = field.value
+  }
+  if (typeof text !== 'string') throw new Error(`Control "${controlName(config)}" other value must be text`)
+  return { index, selected: value[index] === 1, text }
+}
+
 export interface ChoiceState {
   options: string[]
   value: number[]

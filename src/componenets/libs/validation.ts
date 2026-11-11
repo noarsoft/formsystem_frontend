@@ -4,7 +4,7 @@ import type {
 import { decimalPlaces, formatNumber } from './numberValue'
 import { isVisible } from './visibility'
 import {
-  getChoiceState, getDateRangeValue, getDateTimeValue, getDateValue, getMatrixValues, getNumberFieldValue, getRatingValue, getSwitchValue, getTextValue,
+  getChoiceState, getDateRangeValue, getOtherState, getDateTimeValue, getDateValue, getMatrixValues, getNumberFieldValue, getRatingValue, getSwitchValue, getTextValue,
   getTimeValue,
 } from './controlValues'
 import type { FieldValue } from './controlValues'
@@ -13,6 +13,7 @@ export const REQUIRED_TEXT_MESSAGE = 'กรุณากรอกข้อมู
 export const REQUIRED_DATE_MESSAGE = 'กรุณาเลือกวันที่'
 export const REQUIRED_TIME_MESSAGE = 'กรุณาเลือกเวลา'
 export const REQUIRED_RATING_MESSAGE = 'กรุณาให้คะแนน'
+export const REQUIRED_OTHER_MESSAGE = 'กรุณาระบุ'
 export const requiredMatrixMessage = (missing: number) => `กรุณาตอบให้ครบทุกข้อ (ขาด ${missing} ข้อ)`
 export const REQUIRED_DATETIME_MESSAGE = 'กรุณาเลือกวันและเวลา'
 export const REQUIRED_DATE_RANGE_MESSAGE = 'กรุณาเลือกช่วงวันที่ให้ครบ'
@@ -225,13 +226,15 @@ export function validateControl(config: ControlConfig, data?: FormData): string 
     case 'datetime':
       return checkRequired(config, getDateTimeValue(config, data), REQUIRED_DATETIME_MESSAGE)
     case 'dropdown':
-      return checkRequired(
-        config, getChoiceState(config, config.multiple ?? false, data).value, REQUIRED_CHOICE_MESSAGE,
-      )
     case 'checkbox_group':
-      return checkRequired(config, getChoiceState(config, true, data).value, REQUIRED_CHOICE_MESSAGE)
-    case 'option':
-      return checkRequired(config, getChoiceState(config, false, data).value, REQUIRED_CHOICE_MESSAGE)
+    case 'option': {
+      const multiple = config.type === 'checkbox_group' || (config.type === 'dropdown' && (config.multiple ?? false))
+      const { options, value } = getChoiceState(config, multiple, data)
+      // "อื่น ๆ" selected with nothing typed is incomplete, required or not.
+      const other = getOtherState(config, options, value, data)
+      return checkRequired(config, value, REQUIRED_CHOICE_MESSAGE)
+        ?? (other?.selected && other.text.trim() === '' ? config.other?.required_message ?? REQUIRED_OTHER_MESSAGE : null)
+    }
     case 'switch':
       // A required switch must be on (e.g. a consent); off counts as empty.
       if (!config.required || getSwitchValue(config, data) === 1) return null

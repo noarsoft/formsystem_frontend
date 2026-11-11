@@ -370,3 +370,18 @@
     display: inline;
   }
 }
+
+/* "อื่น ๆ (โปรดระบุ)" text box: indented under the option (or next to it in an inline list). */
+.fs-choice-other {
+  max-width: 20rem;
+  margin: 0.25rem 0 0.25rem 1.75rem;
+}
+
+.fs-choice-list.is-inline .fs-choice-other {
+  width: auto;
+  margin: 0;
+}
+
+.fs-dropdown + .fs-choice-other {
+  margin: 0.5rem 0 0;
+}

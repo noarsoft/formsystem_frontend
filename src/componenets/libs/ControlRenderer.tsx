@@ -22,11 +22,12 @@ import Accordion from '../custom/accordion/Accordion'
 import Badge from '../custom/badge/Badge'
 import Card from '../custom/card/Card'
 import type { ButtonConfig, ControlConfig } from './controlTypes'
+import type { OtherInputProps } from '../control/OtherInput'
 import {
-  dateRangeBindings, getChoiceState, ratingRange, getDateRangeValue, getDateTimeValue, getDateValue, getMatrixValues, getNumberFieldValue, getRatingValue, getSwitchValue, getTextValue, getTimeValue, replaceAt, toggleAccordionItem, toggleChoice,
+  dateRangeBindings, getChoiceState, getOtherState, ratingRange, getDateRangeValue, getDateTimeValue, getDateValue, getMatrixValues, getNumberFieldValue, getRatingValue, getSwitchValue, getTextValue, getTimeValue, replaceAt, toggleAccordionItem, toggleChoice,
   updateData,
 } from './controlValues'
-import type { FieldValue } from './controlValues'
+import type { ChoiceControl, FieldValue } from './controlValues'
 import { useFormContext } from './formContext'
 import { inputModeFor, isLocked, numberSettings, validateControl } from './validation'
 import { isVisible } from './visibility'
@@ -76,6 +77,25 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
       onDataChange?.(updateData(data, config.databinding, value))
     } else {
       onChange({ ...config, value } as ControlConfig)
+    }
+  }
+
+  // "อื่น ๆ (โปรดระบุ)" text box of a choice control; its text is saved like any text field.
+  const otherProps = (choice: ChoiceControl, options: string[], value: number[]): OtherInputProps | undefined => {
+    const state = getOtherState(choice, options, value, data)
+    const other = choice.other
+    if (!state || !other) return undefined
+    return {
+      index: state.index,
+      text: state.text,
+      placeholder: other.placeholder,
+      invalid: error !== undefined && state.selected && state.text.trim() === '',
+      onChange: (text) => {
+        if (readOnly) return
+        setTouched(true)
+        if (other.databinding !== undefined) onDataChange?.(updateData(data, other.databinding, text))
+        else onChange({ ...choice, other: { ...other, value: text } })
+      },
     }
   }
 
@@ -296,6 +316,7 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
           style={config.style}
           options={options}
           value={value}
+          other={otherProps(config, options, value)}
           multiple={config.multiple}
           onChange={commit}
         />
@@ -315,6 +336,7 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
           style={config.style}
           options={options}
           value={value}
+          other={otherProps(config, options, value)}
           inline={config.inline}
           onToggle={(index) => commit(toggleChoice(value, index, true))}
         />
@@ -334,6 +356,7 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
           style={config.style}
           options={options}
           value={value}
+          other={otherProps(config, options, value)}
           inline={config.inline}
           onToggle={(index) => commit(toggleChoice(value, index, false))}
         />

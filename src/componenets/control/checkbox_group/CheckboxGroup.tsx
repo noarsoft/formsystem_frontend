@@ -1,4 +1,5 @@
 import ChoiceList from '../ChoiceList'
+import type { OtherInputProps } from '../OtherInput'
 import type { ComponentStyle } from '../../Component'
 
 interface CheckboxGroupProps {
@@ -7,6 +8,7 @@ interface CheckboxGroupProps {
   options: string[]
   value: number[]
   inline?: boolean
+  other?: OtherInputProps
   disabled?: boolean
   readOnly?: boolean
   required?: boolean

@@ -1,6 +1,8 @@
 import type { KeyboardEvent } from 'react'
 import Component from '../Component'
 import { FieldError, RequiredMark } from './Control'
+import OtherInput from './OtherInput'
+import type { OtherInputProps } from './OtherInput'
 import { invalidProps } from '../libs/validation'
 import type { ComponentStyle } from '../Component'
 import './controls.css'
@@ -18,13 +20,15 @@ interface ChoiceListProps {
   readOnly?: boolean
   required?: boolean
   error?: string
+  // "อื่น ๆ (โปรดระบุ)": a text box after that option while it is selected.
+  other?: OtherInputProps
   style?: ComponentStyle
   onToggle: (index: number) => void
 }
 
 // Shared by checkbox_group (kind 'checkbox') and option (kind 'radio').
 export default function ChoiceList({
-  id, label, options, value, kind, inline = false, disabled, readOnly, required, error, style, onToggle,
+  id, label, options, value, kind, inline = false, disabled, readOnly, required, error, other, style, onToggle,
 }: ChoiceListProps) {
   const checkedIndex = value.indexOf(1)
   const locked = disabled || readOnly
@@ -60,7 +64,8 @@ export default function ChoiceList({
         {options.map((option, index) => {
           const checked = value[index] === 1
           const tabbable = !disabled && (kind === 'checkbox' || (checkedIndex === -1 ? index === 0 : checked))
-          return (
+          const showOther = other !== undefined && other.index === index && checked
+          return [
             <div
               key={index}
               id={`${id}-${index}`}
@@ -76,8 +81,21 @@ export default function ChoiceList({
             >
               <span className="fs-mark" aria-hidden="true" />
               <span id={`${id}-${index}-text`}>{option}</span>
-            </div>
-          )
+            </div>,
+            showOther && (
+              <OtherInput
+                key="other"
+                id={id}
+                optionText={option}
+                text={other.text}
+                placeholder={other.placeholder}
+                invalid={other.invalid}
+                disabled={disabled}
+                readOnly={readOnly}
+                onChange={other.onChange}
+              />
+            ),
+          ]
         })}
       </div>
       <FieldError id={id} error={error} />

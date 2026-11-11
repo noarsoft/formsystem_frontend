@@ -39,7 +39,11 @@ export interface NewControl {
   format?: TextFormat
   // matrix only: the question of each row (`options` are its columns).
   rows?: string[]
+  // dropdown / checkbox_group / option: add "อื่น ๆ" with a "โปรดระบุ" text box.
+  other?: boolean
 }
+
+export const OTHER_OPTION = 'อื่น ๆ'
 
 // The editor works on the first grid at the top of the form.
 export function findGrid(form: FormDocument): { index: number, grid: GridConfig } {
@@ -97,6 +101,10 @@ export function bindingsOf(controls: ControlConfig[]): string[] {
       const value = (control as Partial<Record<typeof key, string>>)[key]
       if (value !== undefined) keys.push(value)
     }
+    if ((control.type === 'dropdown' || control.type === 'checkbox_group' || control.type === 'option')
+      && control.other?.databinding !== undefined) {
+      keys.push(control.other.databinding)
+    }
     if (control.type === 'matrix') {
       for (const row of control.rows) if (row.databinding !== undefined) keys.push(row.databinding)
     }
@@ -147,11 +155,19 @@ function newControl(input: NewControl, id: string): { control: ControlConfig, fi
     case 'dropdown':
     case 'checkbox_group':
     case 'option':
+    {
       if (input.options.length === 0) throw new Error('A choice control needs at least one option')
+      // With "อื่น ๆ": make it the last option and give its text its own key.
+      const options = input.other ? [...input.options.filter((o) => o !== OTHER_OPTION), OTHER_OPTION] : input.options
+      const otherKey = `${id}_other`
       return {
-        control: { ...base, type, databinding: id },
-        fields: { [id]: { type: 'number', is_array: 1, options: input.options, value: input.options.map(() => 0) } },
+        control: { ...base, type, databinding: id, ...(input.other ? { other: { databinding: otherKey } } : {}) },
+        fields: {
+          [id]: { type: 'number', is_array: 1, options, value: options.map(() => 0) },
+          ...(input.other ? { [otherKey]: { type: 'string', value: '' } } : {}),
+        },
       }
+    }
     case 'matrix': {
       const rows = input.rows ?? []
       if (input.options.length === 0 || rows.length === 0) throw new Error('A matrix needs at least one row and one column')
