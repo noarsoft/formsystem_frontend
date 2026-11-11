@@ -119,6 +119,22 @@ export type NumberConfig = BaseControl & InputRules & {
   max_message?: string
 }
 
+export type RatingConfig = BaseControl & InputRules & {
+  type: 'rating'
+  label?: string
+  // A whole number from min to max; null or missing = not rated yet.
+  value?: number | null
+  databinding?: string
+  // 'star' = ★★★★☆ (default), 'number' = a row of number buttons (e.g. 0-10 for NPS).
+  display?: 'star' | 'number'
+  // Score range (default 1-5). At most 21 steps.
+  min?: number
+  max?: number
+  // Small text under the two ends, e.g. "ไม่พอใจ" … "พอใจมาก".
+  min_label?: string
+  max_label?: string
+}
+
 export type TimeConfig = BaseControl & InputRules & {
   type: 'time'
   label?: string
@@ -268,6 +284,7 @@ export type ControlConfig =
   | DateTimeConfig
   | TextareaConfig
   | NumberConfig
+  | RatingConfig
   | SwitchConfig
   | LabelConfig
   | DropdownConfig

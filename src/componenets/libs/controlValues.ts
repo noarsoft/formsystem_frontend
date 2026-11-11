@@ -1,5 +1,5 @@
 import type {
-  AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DateRangeConfig, DateTimeConfig, NumberConfig, DropdownConfig, FormData,
+  AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DateRangeConfig, DateTimeConfig, NumberConfig, RatingConfig, DropdownConfig, FormData,
   OptionConfig, SwitchConfig, TextareaConfig, TextboxConfig, TimeConfig,
 } from './controlTypes'
 import { parseDateNumber, parseDateTimeNumber, parseTimeNumber } from './dateValue'
@@ -99,7 +99,7 @@ export function updateData(data: FormData | undefined, key: string, value: Field
 
 // Reads a number-or-null value (date, time, datetime) and checks it with `parse`.
 function getNumberValue(
-  config: DateConfig | TimeConfig | DateTimeConfig | NumberConfig,
+  config: DateConfig | TimeConfig | DateTimeConfig | NumberConfig | RatingConfig,
   data: FormData | undefined,
   parse: (value: unknown) => unknown,
   format: string,
@@ -154,6 +154,30 @@ export function getDateRangeValue(config: DateRangeConfig, data?: FormData): Dat
 // Returns the number, or null when empty. Anything but a finite number (e.g. "12") throws.
 export function getNumberFieldValue(config: NumberConfig, data?: FormData): number | null {
   return getNumberValue(config, data, (value) => typeof value === 'number' && Number.isFinite(value), 'number')
+}
+
+// Score range of a rating (default 1-5). Wrong settings throw.
+export function ratingRange(config: RatingConfig): { min: number, max: number } {
+  const min = config.min ?? 1
+  const max = config.max ?? 5
+  const name = controlName(config)
+  if (!Number.isInteger(min) || !Number.isInteger(max) || min < 0 || min >= max || max - min > 20) {
+    throw new Error(`Control "${name}" rating needs whole numbers 0 <= min < max with at most 21 steps (got ${min}-${max})`)
+  }
+  if (config.display !== undefined && config.display !== 'star' && config.display !== 'number') {
+    throw new Error(`Control "${name}" display must be "star" or "number"`)
+  }
+  return { min, max }
+}
+
+// The score, or null when not rated. A score outside min-max (or not a whole number) throws.
+export function getRatingValue(config: RatingConfig, data?: FormData): number | null {
+  const { min, max } = ratingRange(config)
+  return getNumberValue(
+    config, data,
+    (value) => typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max,
+    `whole number from ${min} to ${max}`,
+  )
 }
 
 // Returns the HHMM number (1430 = 14:30), or null when the time is empty.

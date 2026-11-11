@@ -189,7 +189,7 @@ test('custom controls render accordion, card and badge', () => {
 
 test('every documented control type renders its examples', () => {
   const types = new Set(docs.controlDocs.map((doc) => doc.type))
-  assert.equal(types.size, 19)
+  assert.equal(types.size, 20)
   for (const doc of docs.controlDocs) {
     assert.doesNotThrow(() => render(doc.examples, doc.data), doc.type)
   }
@@ -689,12 +689,12 @@ test('addControl builds the right config and data for every addable type', () =>
   const { grid } = editor.findGrid(form)
   assert.equal(grid.rows, editor.ADDABLE_TYPES.length)
   assert.deepEqual(Object.keys(data), [
-    'textbox_1', 'textarea_1', 'number_1', 'date_1', 'date_range_1_from', 'date_range_1_to', 'time_1', 'datetime_1',
+    'textbox_1', 'textarea_1', 'number_1', 'rating_1', 'date_1', 'date_range_1_from', 'date_range_1_to', 'time_1', 'datetime_1',
     'dropdown_1', 'checkbox_group_1', 'option_1', 'switch_1',
   ])
   assert.deepEqual(data.option_1, { type: 'number', is_array: 1, options: ['a', 'b'], value: [0, 0] })
   assert.deepEqual(data.switch_1, { type: 'number', value: 0 })
-  assert.deepEqual(grid.controls.at(-1), { type: 'label', id: 'label_1', text: 'L11', colno: 0, rowno: 11 })
+  assert.deepEqual(grid.controls.at(-1), { type: 'label', id: 'label_1', text: 'L12', colno: 0, rowno: 12 })
   assert.equal(grid.controls.some((c) => 'required' in c), false)
   assert.doesNotThrow(() => render(form.controls, data))
   assert.deepEqual(validation.validateForm(form, data), [])
@@ -1123,4 +1123,47 @@ test('FormBuilder readonly makes every input view-only and hides errors', () => 
   assert.doesNotMatch(html, /🕒|invalid|aria-required/)
   // Without the flag the same form shows its errors.
   assert.equal(render(controls, undefined, { showErrors: true }).match(/invalid-feedback/g).length, 3)
+})
+
+// ---- rating ----
+
+test('rating values are whole numbers inside the range', () => {
+  assert.equal(values.getRatingValue({ type: 'rating', value: 4 }), 4)
+  assert.equal(values.getRatingValue({ type: 'rating' }), null)
+  assert.equal(values.getRatingValue({ type: 'rating', min: 0, max: 10, value: 0 }), 0)
+  for (const bad of [0, 6, 2.5, '3']) {
+    assert.throws(() => values.getRatingValue({ type: 'rating', id: 'r', value: bad }), /whole number from 1 to 5/, String(bad))
+  }
+  assert.equal(values.getRatingValue({ type: 'rating', databinding: 's', value: 1 }, { s: { type: 'number', value: 5 } }), 5)
+  assert.throws(() => values.getRatingValue({ type: 'rating', databinding: 'fname' }, data), /number field/)
+  for (const bad of [{ min: 5, max: 5 }, { min: -1 }, { max: 30 }, { min: 1.5 }]) {
+    assert.throws(() => values.getRatingValue({ type: 'rating', id: 'r', ...bad }), /0 <= min < max/, JSON.stringify(bad))
+  }
+  assert.throws(() => values.getRatingValue({ type: 'rating', id: 'r', display: 'emoji' }), /display must be/)
+})
+
+test('rating validation and markup', () => {
+  assert.equal(validation.validateControl({ type: 'rating', required: true }), 'กรุณาให้คะแนน')
+  assert.equal(validation.validateControl({ type: 'rating', required: true, value: 1 }), null)
+  const html = render([
+    { type: 'rating', id: 'r', label: 'พอใจ', value: 3 },
+    { type: 'rating', id: 'n', display: 'number', min: 0, max: 10, min_label: 'ไม่เลย', max_label: 'มาก' },
+  ])
+  assert.match(html, /<div id="r" role="radiogroup" aria-labelledby="r-label" class="fs-rating is-star">/)
+  assert.equal(html.match(/<span aria-hidden="true">★<\/span>/g).length, 3)
+  assert.equal(html.match(/<span aria-hidden="true">☆<\/span>/g).length, 2)
+  assert.match(html, /id="r-3" role="radio" aria-checked="true" aria-label="3 ดาว"[^>]*tabindex="0"/)
+  assert.match(html, /id="r-1" role="radio" aria-checked="false"[^>]*tabindex="-1"/)
+  // Nothing chosen: the first score takes the tab stop.
+  assert.match(html, /id="n-0" role="radio" aria-checked="false" aria-label="0 คะแนน" tabindex="0" class="fs-rating-item">0</)
+  assert.equal(html.match(/id="n-\d+" role="radio"/g).length, 11)
+  assert.match(html, /<div class="fs-rating-labels form-text"><span>ไม่เลย<\/span><span>มาก<\/span><\/div>/)
+  const err = render([{ type: 'rating', id: 'e', required: true }], undefined, { showErrors: true })
+  assert.match(err, /class="fs-rating is-star is-invalid" aria-required="true" aria-invalid="true" aria-describedby="e-error"/)
+  assert.match(err, /<div id="e-error" class="invalid-feedback d-block">กรุณาให้คะแนน<\/div>/)
+  const ro = render([{ type: 'rating', id: 'x', value: 2, readonly: true }, { type: 'rating', id: 'y', disabled: true }])
+  assert.match(ro, /class="fs-rating is-star is-readonly"/)
+  assert.match(ro, /id="x-2" role="radio" aria-checked="true" aria-label="2 ดาว" aria-readonly="true"/)
+  assert.match(ro, /class="fs-rating is-star is-disabled"/)
+  assert.doesNotMatch(ro.split('id="y"')[1], /tabindex="0"/)
 })

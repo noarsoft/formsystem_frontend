@@ -351,6 +351,39 @@ export const controlDocs: ControlDoc[] = [
     data: { consent: { type: 'number', value: 0 } },
   },
   {
+    type: 'rating',
+    group: 'Control',
+    summary:
+      'ให้คะแนน แบบดาว ★★★★☆ (ค่าเริ่มต้น 1-5) หรือแบบปุ่มตัวเลข เช่น 0-10 สำหรับ NPS ค่าเก็บเป็น Number (ยังไม่ให้ = null) ' +
+      'ชี้เมาส์เพื่อดูก่อน คลิกเพื่อเลือก คลิกค่าเดิมซ้ำเพื่อล้าง ใช้ลูกศร/Home/End ได้',
+    props: [
+      { name: 'label', type: 'string', description: 'ข้อความป้ายกำกับ' },
+      { name: 'value', type: 'number | null', default: 'null', description: 'คะแนน (จำนวนเต็มในช่วง min-max) ค่านอกช่วงจะ throw error' },
+      { name: 'display', type: "'star' | 'number'", default: "'star'", description: 'ดาว หรือปุ่มตัวเลข' },
+      { name: 'min', type: 'number', default: '1', description: 'คะแนนต่ำสุด (0 ขึ้นไป)' },
+      { name: 'max', type: 'number', default: '5', description: 'คะแนนสูงสุด (ไม่เกิน 21 ระดับ)' },
+      { name: 'min_label', type: 'string', description: 'ข้อความใต้ฝั่งซ้าย เช่น "ไม่แนะนำเลย"' },
+      { name: 'max_label', type: 'string', description: 'ข้อความใต้ฝั่งขวา เช่น "แนะนำแน่นอน"' },
+      disabledChoiceProp,
+      ...requiredProps,
+      {
+        name: 'databinding',
+        type: 'string',
+        description: 'key ใน data ที่เป็น { "type": "number", "value": 4 } (value เป็น null ได้) ค่าใน data ชนะ value ใน schema',
+      },
+    ],
+    examples: [
+      { type: 'rating', id: 'ex_rating', label: 'ความพึงพอใจโดยรวม', value: 4 },
+      {
+        type: 'rating', id: 'ex_rating_nps', label: 'จะแนะนำเราให้เพื่อนไหม (bind กับ nps, 0-10, required)',
+        display: 'number', min: 0, max: 10, min_label: 'ไม่แนะนำเลย', max_label: 'แนะนำแน่นอน',
+        databinding: 'nps', required: true,
+      },
+      { type: 'rating', id: 'ex_rating_readonly', label: 'คะแนนที่ให้ไว้ (readonly)', value: 3, readonly: true },
+    ],
+    data: { nps: { type: 'number', value: null } },
+  },
+  {
     type: 'label',
     group: 'Control',
     summary: 'ข้อความป้ายกำกับ (form-label) ใช้แสดงหัวข้อ หรือผูกกับ control อื่นผ่าน for',

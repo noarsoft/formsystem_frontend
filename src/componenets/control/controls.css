@@ -188,3 +188,86 @@
   cursor: not-allowed;
   opacity: 0.5;
 }
+
+/* Rating: stars (Tangerine with a darker edge for contrast) or a row of number buttons. */
+.fs-rating-wrap {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.fs-rating {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  outline: none;
+}
+
+.fs-rating-item {
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.fs-rating.is-star .fs-rating-item {
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--cb-muted-text);
+}
+
+.fs-rating.is-star .fs-rating-item.is-on {
+  color: var(--cb-tangerine);
+  -webkit-text-stroke: 1px var(--cb-accent-text);
+}
+
+.fs-rating.is-number .fs-rating-item {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  border: var(--bs-border-width) solid var(--cb-line-gray);
+  border-radius: var(--bs-border-radius);
+  background: var(--bs-body-bg);
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.fs-rating.is-number .fs-rating-item.is-on {
+  background: var(--cb-soft-tint-strong);
+  border-color: var(--cb-tangerine);
+}
+
+.fs-rating.is-number .fs-rating-item.is-checked {
+  background: var(--cb-tangerine);
+  border-color: var(--cb-tangerine);
+  color: var(--cb-charcoal-ink);
+  font-weight: 600;
+}
+
+.fs-rating.is-number.is-invalid .fs-rating-item {
+  border-color: var(--bs-form-invalid-border-color);
+}
+
+.fs-rating.is-star.is-invalid .fs-rating-item:not(.is-on) {
+  color: var(--bs-form-invalid-border-color);
+}
+
+.fs-rating-item:focus-visible {
+  border-radius: var(--bs-border-radius);
+  box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+}
+
+.fs-rating.is-readonly .fs-rating-item {
+  cursor: default;
+}
+
+.fs-rating.is-disabled .fs-rating-item {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.fs-rating-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.25rem;
+}

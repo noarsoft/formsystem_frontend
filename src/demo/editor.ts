@@ -6,6 +6,7 @@ export const ADDABLE_TYPES = [
   { type: 'textbox', name: 'ช่องข้อความ (textbox)' },
   { type: 'textarea', name: 'ข้อความหลายบรรทัด (textarea)' },
   { type: 'number', name: 'ตัวเลข (number)' },
+  { type: 'rating', name: 'ให้คะแนน (rating)' },
   { type: 'date', name: 'วันที่ (date)' },
   { type: 'date_range', name: 'ช่วงวันที่ (date_range)' },
   { type: 'time', name: 'เวลา (time)' },
@@ -121,6 +122,7 @@ function newControl(input: NewControl, id: string): { control: ControlConfig, fi
     case 'textarea':
       return { control: { ...base, type, databinding: id }, fields: { [id]: { type: 'string', value: '' } } }
     case 'number':
+    case 'rating':
     case 'date':
     case 'time':
     case 'datetime':
