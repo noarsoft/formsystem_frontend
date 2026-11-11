@@ -5,6 +5,7 @@ import { validateForm } from './componenets/libs/validation'
 import controlsJson from './assets/controls.json'
 import dataJson from './assets/data.json'
 import ControlDocument from './form/document'
+import DemoEditor from './demo/DemoEditor'
 import './App.css'
 
 const initialForm = controlsJson as FormDocument
@@ -44,8 +45,21 @@ function App() {
               {errors.length ? `กรอกข้อมูลไม่ครบ ${errors.length} ช่อง` : 'ข้อมูลครบถ้วน พร้อมส่ง'}
             </div>
           )}
+          <DemoEditor
+            form={form}
+            data={data}
+            onChange={(nextForm, nextData) => {
+              setForm(nextForm)
+              setData(nextData)
+            }}
+          />
           <h2 className="h4 mt-4">data</h2>
           <pre aria-label="data">{JSON.stringify(data, null, 2)}</pre>
+          {/* Not saved anywhere: refresh restores the sample form. Copy the JSON to keep a layout. */}
+          <details className="mt-3">
+            <summary>ดู JSON ของฟอร์ม</summary>
+            <pre aria-label="form">{JSON.stringify(form, null, 2)}</pre>
+          </details>
         </>
       ) : (
         <ControlDocument />

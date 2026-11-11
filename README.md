@@ -58,7 +58,7 @@ function Example() {
 }
 ```
 
-Controls: `textbox`, `date`, `time`, `datetime`, `textarea`, `switch`, `label`, `dropdown`, `checkbox_group`, `option`,
+Controls: `textbox`, `date`, `date_range`, `time`, `datetime`, `textarea`, `switch`, `label`, `dropdown`, `checkbox_group`, `option`,
 `button` (controls); `container`, `grid`, `flex` (containers); `accordion`,
 `card`, `badge` (custom, in `src/componenets/custom`). A password field is a
 `textbox` with `input_type: "password"`: the text is hidden and a แสดง/ซ่อน
@@ -70,7 +70,11 @@ number `YYYYMMDD` (25681118 = 18/11/2568) and shows `dd/mm/yyyy`; bind it to
 `{ "type": "number", "value": 25681118 }` (`null` = empty). `time` stores `HHMM`
 (1430 = 14:30) and `datetime` stores a Buddhist-era `YYYYMMDDHHMM`
 (256811181430 = 18/11/2568 14:30), both bound to number fields; their pickers
-offer minutes every `minute_step` (default 1). `switch` is an on/off
+offer minutes every `minute_step` (default 1). `date_range` is two date boxes
+("ตั้งแต่ … ถึง …") whose ends are kept in `value_from` / `value_to`, or bound to
+two number fields with `databinding_from` + `databinding_to` (set both or neither);
+the "to" calendar cannot pick a day before "from" and vice versa, and an end before
+the start is always reported as an error. `switch` is an on/off
 toggle (div with `role="switch"`) storing `1` (on) or `0` (off); bind it to
 `{ "type": "number", "value": 0 }` (`null` = off). A required switch must be on. `dropdown`,
 `checkbox_group` and
@@ -81,12 +85,20 @@ Any control can set `colno` / `rowno` (0-based, plus optional `colspan` /
 `rowspan`); the surrounding `grid` places it there. Out-of-range or overlapping
 cells and malformed choice values throw an error instead of being dropped.
 
+The **Demo** tab can add and remove controls (`src/demo`): pick a type, a label,
+`required` and (for choices) the options, then a free cell of the form's grid by
+row/column (or a new row, which grows the grid). Each new control gets its own
+data key (`textbox_1`, …; `date_range` gets `_from` / `_to`), and removing a
+control also removes the data keys no other control uses. Nothing is saved:
+refresh restores the sample, and "ดู JSON ของฟอร์ม" shows the current form JSON.
+The add/remove logic is in `src/demo/editor.ts` (pure functions, covered by tests).
+
 Every control is documented, with live examples, in `src/form/document`
 (the **Document** tab of the demo app). To add a control, add its config type to
 `libs/controlTypes.ts`, a case to `libs/ControlRenderer.tsx`, and an entry to
 `src/form/document/docs.ts`.
 
-Input controls (`textbox`, `date`, `time`, `datetime`, `textarea`, `dropdown`,
+Input controls (`textbox`, `date`, `date_range`, `time`, `datetime`, `textarea`, `dropdown`,
 `checkbox_group`, `option`, `switch`) accept `required: true` and an optional
 `required_message`. A required control shows a red `*` after its label and, when
 its value is empty (blank or whitespace-only text, a `null` date, or no option

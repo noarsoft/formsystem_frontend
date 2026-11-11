@@ -9,6 +9,7 @@ import Dropdown from '../control/dropdown/Dropdown'
 import Label from '../control/label/Label'
 import Option from '../control/option/Option'
 import DateField from '../control/date/date'
+import DateRangeField from '../control/date_range/DateRangeField'
 import DateTimeField from '../control/datetime/DateTimeField'
 import TimeField from '../control/time/TimeField'
 import Textarea from '../control/textarea/Textarea'
@@ -19,7 +20,7 @@ import Badge from '../custom/badge/Badge'
 import Card from '../custom/card/Card'
 import type { ButtonConfig, ControlConfig } from './controlTypes'
 import {
-  getChoiceState, getDateTimeValue, getDateValue, getSwitchValue, getTextValue, getTimeValue, replaceAt, toggleAccordionItem, toggleChoice,
+  dateRangeBindings, getChoiceState, getDateRangeValue, getDateTimeValue, getDateValue, getSwitchValue, getTextValue, getTimeValue, replaceAt, toggleAccordionItem, toggleChoice,
   updateData,
 } from './controlValues'
 import type { FieldValue } from './controlValues'
@@ -99,6 +100,30 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
           onChange={commit}
         />
       )
+
+    case 'date_range': {
+      const bindings = dateRangeBindings(config)
+      return (
+        <DateRangeField
+          id={id}
+          label={config.label}
+          required={config.required}
+          error={error}
+          style={config.style}
+          value={getDateRangeValue(config, data)}
+          placeholder={config.placeholder}
+          disabled={config.disabled}
+          minYear={config.min_year}
+          maxYear={config.max_year}
+          onChange={(end, value) => {
+            // Each end is written on its own: to its data key, or to value_from / value_to.
+            setTouched(true)
+            if (bindings) onDataChange?.(updateData(data, bindings[end], value))
+            else onChange({ ...config, [end === 'from' ? 'value_from' : 'value_to']: value })
+          }}
+        />
+      )
+    }
 
     case 'time':
       return (

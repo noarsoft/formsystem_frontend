@@ -13,12 +13,14 @@ let componentStyle
 let docs
 let dates
 let validation
+let editor
 
 before(async () => {
   server = await createServer({ server: { middlewareMode: true }, appType: 'custom' })
   dates = await server.ssrLoadModule('/src/componenets/libs/dateValue.ts')
   values = await server.ssrLoadModule('/src/componenets/libs/controlValues.ts')
   validation = await server.ssrLoadModule('/src/componenets/libs/validation.ts')
+  editor = await server.ssrLoadModule('/src/demo/editor.ts')
   layout = await server.ssrLoadModule('/src/componenets/libs/gridLayout.ts')
   FormBuilder = (await server.ssrLoadModule('/src/componenets/libs/Formbuilder.tsx')).default
   componentStyle = (await server.ssrLoadModule('/src/componenets/libs/componentStyle.ts')).componentStyle
@@ -128,7 +130,7 @@ test('assets/controls.json renders with assets/data.json bound', () => {
   const read = (name) => JSON.parse(readFileSync(new URL(`../src/assets/${name}`, import.meta.url), 'utf8'))
   const html = render(read('controls.json').controls, read('data.json'))
   assert.match(html, /grid-template-columns:repeat\(3, minmax\(0, 1fr\)\)/)
-  assert.match(html, /grid-column:3 \/ span 1;grid-row:2 \/ span 1/)
+  assert.match(html, /grid-column:1 \/ span 1;grid-row:2 \/ span 1/)
   assert.match(html, /class="d-flex flex-row gap-3"/)
   assert.match(html, /for="textbox1">Textbox 1<span class="text-danger ms-1" aria-hidden="true">\*<\/span><\/label>/)
   assert.match(html, /value="piyavach"/)
@@ -183,7 +185,7 @@ test('custom controls render accordion, card and badge', () => {
 
 test('every documented control type renders its examples', () => {
   const types = new Set(docs.controlDocs.map((doc) => doc.type))
-  assert.equal(types.size, 17)
+  assert.equal(types.size, 18)
   for (const doc of docs.controlDocs) {
     assert.doesNotThrow(() => render(doc.examples, doc.data), doc.type)
   }
@@ -568,4 +570,182 @@ test('required time and datetime must have a value', () => {
   assert.match(html, /id="tt"[^>]*class="form-control flex-grow-1 is-invalid"/)
   assert.match(html, /<div id="tt-error" class="invalid-feedback d-block">กรุณาเลือกเวลา<\/div>/)
   assert.match(html, /<div id="dd-error" class="invalid-feedback d-block">กรุณาเลือกวันและเวลา<\/div>/)
+})
+
+// ---- date_range ----
+
+const leave = {
+  leave_from: { type: 'number', value: 25681118 },
+  leave_to: { type: 'number', value: 25681120 },
+}
+
+test('date_range reads both ends inline or from two data keys', () => {
+  assert.deepEqual(values.getDateRangeValue({ type: 'date_range' }), { from: null, to: null })
+  assert.deepEqual(
+    values.getDateRangeValue({ type: 'date_range', value_from: 25690101, value_to: 25690105 }),
+    { from: 25690101, to: 25690105 },
+  )
+  const bound = { type: 'date_range', id: 'r', databinding_from: 'leave_from', databinding_to: 'leave_to', value_from: 25000101 }
+  assert.deepEqual(values.getDateRangeValue(bound, leave), { from: 25681118, to: 25681120 })
+  assert.throws(() => values.getDateRangeValue({ type: 'date_range', id: 'r', databinding_from: 'leave_from' }, leave), /both databinding_from and databinding_to/)
+  assert.throws(() => values.getDateRangeValue({ type: 'date_range', id: 'r', databinding_to: 'leave_to' }, leave), /or neither/)
+  assert.throws(() => values.getDateRangeValue({ ...bound, databinding_to: 'missing' }, leave), /bound to "missing"/)
+  assert.throws(() => values.getDateRangeValue({ ...bound, databinding_to: 'fname' }, { ...leave, ...data }), /number field/)
+  assert.throws(() => values.getDateRangeValue({ type: 'date_range', id: 'r', value_to: 25680230 }), /valid YYYYMMDD/)
+  // Writing one end keeps the other untouched.
+  const next = values.updateData(leave, 'leave_to', 25681125)
+  assert.deepEqual(next, { leave_from: leave.leave_from, leave_to: { type: 'number', value: 25681125 } })
+  assert.equal(leave.leave_to.value, 25681120)
+})
+
+test('date_range validation: required needs both ends, and the end may not be before the start', () => {
+  const { REQUIRED_DATE_RANGE_MESSAGE, DATE_RANGE_ORDER_MESSAGE } = validation
+  const config = { type: 'date_range', id: 'r', required: true }
+  assert.equal(validation.validateControl(config), REQUIRED_DATE_RANGE_MESSAGE)
+  assert.equal(validation.validateControl({ ...config, value_from: 25681118 }), REQUIRED_DATE_RANGE_MESSAGE)
+  assert.equal(validation.validateControl({ ...config, value_to: 25681118 }), REQUIRED_DATE_RANGE_MESSAGE)
+  assert.equal(validation.validateControl({ ...config, value_from: 25681118, value_to: 25681118 }), null)
+  assert.equal(validation.validateControl({ ...config, required_message: 'ระบุวันลา' }), 'ระบุวันลา')
+  assert.equal(validation.validateControl({ type: 'date_range' }), null)
+  // Order is checked even when not required.
+  assert.equal(validation.validateControl({ type: 'date_range', value_from: 25681120, value_to: 25681118 }), DATE_RANGE_ORDER_MESSAGE)
+  const swapped = { leave_from: leave.leave_to, leave_to: leave.leave_from }
+  assert.deepEqual(validation.validateForm({ controls: [{ type: 'date_range', id: 'r', databinding_from: 'leave_from', databinding_to: 'leave_to' }] }, swapped), [
+    { id: 'r', message: DATE_RANGE_ORDER_MESSAGE },
+  ])
+})
+
+test('date_range renders two labelled date boxes under one label', () => {
+  const html = render([
+    { type: 'date_range', id: 'r', label: 'วันลา', databinding_from: 'leave_from', databinding_to: 'leave_to', required: true },
+  ], leave)
+  assert.match(html, /<div id="r-label" class="form-label">วันลา<span class="text-danger ms-1" aria-hidden="true">\*<\/span><\/div>/)
+  assert.match(html, /<div id="r" role="group" aria-labelledby="r-label"/)
+  assert.match(html, /id="r-from"[^>]*role="combobox"[^>]*aria-label="วันลา ตั้งแต่"[^>]*>18\/11\/2568</)
+  assert.match(html, /id="r-to"[^>]*role="combobox"[^>]*aria-label="วันลา ถึง"[^>]*>20\/11\/2568</)
+  assert.match(html, />ถึง<\/span>/)
+  assert.equal(html.match(/>📅<\/button>/g).length, 2)
+  assert.doesNotMatch(html, /invalid/)
+})
+
+test('date_range shows one message and marks the right boxes', () => {
+  const missingTo = render([{ type: 'date_range', id: 'a', required: true, value_from: 25681118 }], undefined, { showErrors: true })
+  assert.match(missingTo, /id="a-from"[^>]*class="form-control flex-grow-1"/)
+  assert.match(missingTo, /id="a-to"[^>]*class="form-control flex-grow-1 is-invalid"[^>]*aria-invalid="true" aria-describedby="a-error"/)
+  assert.equal(missingTo.match(/invalid-feedback/g).length, 1)
+  assert.match(missingTo, /<div id="a-error" class="invalid-feedback d-block">กรุณาเลือกช่วงวันที่ให้ครบ<\/div>/)
+  const reversed = render([{ type: 'date_range', id: 'b', value_from: 25681120, value_to: 25681118 }], undefined, { showErrors: true })
+  assert.equal(reversed.match(/is-invalid/g).length, 2)
+  assert.match(reversed, /วันสิ้นสุดต้องไม่ก่อนวันเริ่มต้น/)
+})
+
+// ---- demo editor (add / remove controls) ----
+
+const demoForm = () => JSON.parse(readFileSync(new URL('../src/assets/controls.json', import.meta.url), 'utf8'))
+const demoData = () => JSON.parse(readFileSync(new URL('../src/assets/data.json', import.meta.url), 'utf8'))
+
+test('freeCells lists grid cells not used by any child, spans included', () => {
+  const { grid } = editor.findGrid(demoForm())
+  // The demo grid is 3×2 with flex boxes at (0,0) and (0,1).
+  assert.deepEqual(editor.freeCells(grid), [
+    { colno: 1, rowno: 0 }, { colno: 2, rowno: 0 }, { colno: 1, rowno: 1 }, { colno: 2, rowno: 1 },
+  ])
+  const spanned = { type: 'grid', columns: 2, rows: 2, controls: [{ type: 'label', text: 'x', colno: 0, rowno: 0, colspan: 2 }] }
+  assert.deepEqual(editor.freeCells(spanned), [{ colno: 0, rowno: 1 }, { colno: 1, rowno: 1 }])
+  assert.throws(() => editor.findGrid({ controls: [] }), /needs a grid/)
+})
+
+test('addControl puts the control in the cell, creates its data keys and never mutates', () => {
+  const form = demoForm()
+  const data = demoData()
+  const before = JSON.stringify([form, data])
+  const added = editor.addControl(form, data, {
+    type: 'textbox', label: 'อีเมล', required: true, options: [], cell: { colno: 2, rowno: 0 },
+  })
+  assert.equal(JSON.stringify([form, data]), before)
+  assert.equal(added.id, 'textbox_1')
+  const { grid } = editor.findGrid(added.form)
+  assert.deepEqual(grid.controls.at(-1), {
+    id: 'textbox_1', label: 'อีเมล', required: true, colno: 2, rowno: 0, type: 'textbox', databinding: 'textbox_1',
+  })
+  assert.deepEqual(added.data.textbox_1, { type: 'string', value: '' })
+  assert.equal(grid.rows, 2)
+  // The new form renders, and its empty required field is reported.
+  assert.match(render(added.form.controls, added.data), /id="textbox_1"/)
+  assert.deepEqual(validation.validateForm(added.form, added.data).map((e) => e.id), ['textbox_1'])
+})
+
+test('addControl builds the right config and data for every addable type', () => {
+  let form = { controls: [{ type: 'grid', id: 'g', columns: 1, rows: 1, controls: [] }] }
+  let data = {}
+  for (const [rowno, { type }] of editor.ADDABLE_TYPES.entries()) {
+    const options = editor.CHOICE_TYPES.includes(type) ? ['a', 'b'] : []
+    ;({ form, data } = editor.addControl(form, data, { type, label: `L${rowno}`, required: false, options, cell: { colno: 0, rowno } }))
+  }
+  const { grid } = editor.findGrid(form)
+  assert.equal(grid.rows, editor.ADDABLE_TYPES.length)
+  assert.deepEqual(Object.keys(data), [
+    'textbox_1', 'textarea_1', 'date_1', 'date_range_1_from', 'date_range_1_to', 'time_1', 'datetime_1',
+    'dropdown_1', 'checkbox_group_1', 'option_1', 'switch_1',
+  ])
+  assert.deepEqual(data.option_1, { type: 'number', is_array: 1, options: ['a', 'b'], value: [0, 0] })
+  assert.deepEqual(data.switch_1, { type: 'number', value: 0 })
+  assert.deepEqual(grid.controls.at(-1), { type: 'label', id: 'label_1', text: 'L10', colno: 0, rowno: 10 })
+  assert.equal(grid.controls.some((c) => 'required' in c), false)
+  assert.doesNotThrow(() => render(form.controls, data))
+  assert.deepEqual(validation.validateForm(form, data), [])
+})
+
+test('addControl rejects used or outside cells, empty choices, and picks unique ids', () => {
+  const form = demoForm()
+  const data = demoData()
+  const input = { type: 'textbox', label: 'x', required: false, options: [] }
+  assert.throws(() => editor.addControl(form, data, { ...input, cell: { colno: 0, rowno: 0 } }), /already used/)
+  assert.throws(() => editor.addControl(form, data, { ...input, cell: { colno: 3, rowno: 0 } }), /outside the grid/)
+  assert.throws(() => editor.addControl(form, data, { ...input, type: 'option', cell: { colno: 1, rowno: 0 } }), /at least one option/)
+  // A row past the last one grows the grid.
+  const grown = editor.addControl(form, data, { ...input, cell: { colno: 1, rowno: 2 } })
+  assert.equal(editor.findGrid(grown.form).grid.rows, 3)
+  // textbox_1 is taken now, and so is a data key called textbox_2.
+  const next = editor.addControl(grown.form, { ...grown.data, textbox_2: { type: 'string', value: '' } }, { ...input, cell: { colno: 2, rowno: 2 } })
+  assert.equal(next.id, 'textbox_3')
+})
+
+test('listControls and removeControl handle nested controls and clean up data keys', () => {
+  const form = demoForm()
+  const data = demoData()
+  const listed = editor.listControls(form)
+  assert.deepEqual(listed.map((item) => [item.path.join('.'), item.depth, item.control.type]), [
+    ['0', 0, 'flex'], ['1', 0, 'flex'], ['1.0', 1, 'textbox'], ['1.1', 1, 'checkbox_group'],
+  ])
+  // Remove the textbox inside flex1: its data key fname goes, hobby stays.
+  const one = editor.removeControl(form, data, [1, 0])
+  assert.deepEqual(editor.listControls(one.form).map((item) => item.path.join('.')), ['0', '1', '1.0'])
+  assert.deepEqual(Object.keys(one.data), ['hobby'])
+  assert.equal(data.fname.value, 'piyavach')
+  // Remove the whole flex: both children and both keys go.
+  const all = editor.removeControl(form, data, [1])
+  assert.deepEqual(all.data, {})
+  assert.equal(editor.listControls(all.form).length, 1)
+  // A key still used by another control is kept.
+  const twice = editor.addControl(form, data, { type: 'textbox', label: 'x', required: false, options: [], cell: { colno: 1, rowno: 0 } })
+  const shared = { ...twice.form }
+  shared.controls[0].controls.at(-1).databinding = 'fname'
+  assert.ok('fname' in editor.removeControl(shared, twice.data, [1, 0]).data)
+  assert.throws(() => editor.removeControl(form, data, [9]), /No control at path 9/)
+})
+
+test('demo editor panel renders the add fields and one remove button per control', async () => {
+  const DemoEditor = (await server.ssrLoadModule('/src/demo/DemoEditor.tsx')).default
+  const html = renderToStaticMarkup(React.createElement(DemoEditor, { form: demoForm(), data: demoData(), onChange: () => {} }))
+  assert.match(html, /id="new_type"/)
+  assert.match(html, /id="new_cell"/)
+  assert.match(html, /id="new_label"/)
+  assert.match(html, /role="switch"/)
+  assert.match(html, />เพิ่ม control<\/button>/)
+  assert.equal(html.match(/aria-label="ลบ /g).length, 4)
+  assert.match(html, />ลบ \(รวม 2 ช่องข้างใน\)</)
+  assert.match(html, /control ในตาราง \(4\)/)
+  assert.match(html, /aria-label="ลบ flex \(ไม่มีชื่อ\)"/)
+  assert.match(html, /aria-label="ลบ textbox Textbox 1"/)
 })

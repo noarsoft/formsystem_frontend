@@ -17,6 +17,9 @@ interface CalendarModalProps {
   withTime?: boolean
   time?: TimeParts | null
   minuteStep?: number
+  // Earliest / latest selectable day as YYYYMMDD (date_range keeps "ถึง" on or after "ตั้งแต่").
+  minDate?: number | null
+  maxDate?: number | null
   // YYYYMMDD (or YYYYMMDDHHMM with withTime) in Buddhist Era, or null to clear.
   onSelect: (value: number | null) => void
   onClose: () => void
@@ -25,7 +28,8 @@ interface CalendarModalProps {
 const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max)
 
 export default function CalendarModal({
-  id, value, minYear, maxYear, withTime = false, time = null, minuteStep = 1, onSelect, onClose,
+  id, value, minYear, maxYear, withTime = false, time = null, minuteStep = 1, minDate = null, maxDate = null,
+  onSelect, onClose,
 }: CalendarModalProps) {
   const today = todayParts()
   const start = value ?? today
@@ -48,7 +52,11 @@ export default function CalendarModal({
   const days = Array.from({ length: daysInMonth(view.year, view.month) }, (_, i) => i + 1)
   const isSame = (parts: DateParts | null, day: number) =>
     parts !== null && parts.year === view.year && parts.month === view.month && parts.day === day
-  const todayInRange = today.year >= minYear && today.year <= maxYear
+  const allowed = (parts: DateParts) => {
+    const n = toDateNumber(parts)
+    return (minDate === null || n >= minDate) && (maxDate === null || n <= maxDate)
+  }
+  const todayInRange = today.year >= minYear && today.year <= maxYear && allowed(today)
   const selectedDate = withTime ? pendingDate : value
 
   const pickDay = (day: number) => {
@@ -155,6 +163,7 @@ export default function CalendarModal({
               type="button"
               className={`btn btn-sm ${style}`}
               aria-pressed={selected}
+              disabled={!allowed({ year: view.year, month: view.month, day })}
               aria-label={`${day} ${thaiMonths[view.month - 1]} ${view.year}`}
               onClick={() => pickDay(day)}
             >

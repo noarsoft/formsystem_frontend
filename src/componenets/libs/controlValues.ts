@@ -1,5 +1,5 @@
 import type {
-  AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DateTimeConfig, DropdownConfig, FormData,
+  AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DateRangeConfig, DateTimeConfig, DropdownConfig, FormData,
   OptionConfig, SwitchConfig, TextareaConfig, TextboxConfig, TimeConfig,
 } from './controlTypes'
 import { parseDateNumber, parseDateTimeNumber, parseTimeNumber } from './dateValue'
@@ -123,6 +123,32 @@ function getNumberValue(
 // Returns the Buddhist-era YYYYMMDD number, or null when the date is empty.
 export function getDateValue(config: DateConfig, data?: FormData): number | null {
   return getNumberValue(config, data, parseDateNumber, 'YYYYMMDD Buddhist-era date')
+}
+
+export interface DateRange {
+  from: number | null
+  to: number | null
+}
+
+// Which data keys a date_range writes to, or null when it keeps its values inline.
+export function dateRangeBindings(config: DateRangeConfig): { from: string, to: string } | null {
+  const { databinding_from: from, databinding_to: to } = config
+  if (from === undefined && to === undefined) return null
+  if (from === undefined || to === undefined) {
+    throw new Error(`Control "${controlName(config)}" must set both databinding_from and databinding_to, or neither`)
+  }
+  return { from, to }
+}
+
+// Both ends of a date_range (YYYYMMDD Buddhist-era numbers or null). Order is checked by validation.
+export function getDateRangeValue(config: DateRangeConfig, data?: FormData): DateRange {
+  const bindings = dateRangeBindings(config)
+  const end = (value: number | null | undefined, databinding: string | undefined) =>
+    getDateValue({ type: 'date', id: config.id, value, databinding }, data)
+  return {
+    from: end(config.value_from, bindings?.from),
+    to: end(config.value_to, bindings?.to),
+  }
 }
 
 // Returns the HHMM number (1430 = 14:30), or null when the time is empty.

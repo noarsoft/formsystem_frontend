@@ -108,6 +108,51 @@ export const controlDocs: ControlDoc[] = [
     data: { birthday: { type: 'number', value: 25430229 } },
   },
   {
+    type: 'date_range',
+    group: 'Control',
+    summary:
+      'ช่วงวันที่แบบพุทธศักราช เช่น วันลา "ตั้งแต่ … ถึง …" เป็นกล่องวันที่ 2 กล่องใต้ label เดียว ' +
+      'แต่ละฝั่งเก็บเป็น YYYYMMDD หรือ null ปฏิทินฝั่ง "ถึง" เลือกวันก่อน "ตั้งแต่" ไม่ได้ (และกลับกัน) ' +
+      'ถ้าข้อมูลมีวันสิ้นสุดก่อนวันเริ่มต้นจะแสดงข้อความ "วันสิ้นสุดต้องไม่ก่อนวันเริ่มต้น" เสมอ',
+    props: [
+      { name: 'label', type: 'string', description: 'ข้อความป้ายกำกับ' },
+      { name: 'value_from', type: 'number | null', default: 'null', description: 'วันเริ่มต้น YYYYMMDD (ใช้เมื่อไม่ได้ bind)' },
+      { name: 'value_to', type: 'number | null', default: 'null', description: 'วันสิ้นสุด YYYYMMDD (ใช้เมื่อไม่ได้ bind)' },
+      { name: 'placeholder', type: 'string', default: "'วว/ดด/ปปปป'", description: 'ข้อความในกล่องที่ยังไม่มีค่า' },
+      { name: 'min_year', type: 'number', default: 'ปีปัจจุบัน - 100', description: 'ปี พ.ศ. ต่ำสุดที่เลือกได้' },
+      { name: 'max_year', type: 'number', default: 'ปีปัจจุบัน + 20', description: 'ปี พ.ศ. สูงสุดที่เลือกได้' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'ปิดการเลือก' },
+      {
+        name: 'required',
+        type: 'boolean',
+        default: 'false',
+        description: 'ต้องเลือกครบทั้ง 2 ฝั่ง ถ้าขาดฝั่งใดจะแสดง "กรุณาเลือกช่วงวันที่ให้ครบ"',
+      },
+      { name: 'required_message', type: 'string', description: 'ข้อความแจ้งเตือนแทนข้อความมาตรฐาน (เฉพาะกรณีเลือกไม่ครบ)' },
+      {
+        name: 'databinding_from',
+        type: 'string',
+        description: 'key ใน data ของวันเริ่มต้น { "type": "number", "value": 25681118 } ต้องตั้งคู่กับ databinding_to',
+      },
+      {
+        name: 'databinding_to',
+        type: 'string',
+        description: 'key ใน data ของวันสิ้นสุด ตั้งแค่ฝั่งเดียวจะ throw error',
+      },
+    ],
+    examples: [
+      {
+        type: 'date_range', id: 'ex_leave', label: 'วันลา (bind กับ leave_from / leave_to, required)',
+        databinding_from: 'leave_from', databinding_to: 'leave_to', required: true,
+      },
+      { type: 'date_range', id: 'ex_range_inline', label: 'ช่วงเวลาโครงการ', value_from: 25690101, value_to: null },
+    ],
+    data: {
+      leave_from: { type: 'number', value: 25681118 },
+      leave_to: { type: 'number', value: 25681120 },
+    },
+  },
+  {
     type: 'time',
     group: 'Control',
     summary:

@@ -1,6 +1,6 @@
 import type { ControlConfig, FormData, FormDocument } from './controlTypes'
 import {
-  getChoiceState, getDateTimeValue, getDateValue, getSwitchValue, getTextValue, getTimeValue,
+  getChoiceState, getDateRangeValue, getDateTimeValue, getDateValue, getSwitchValue, getTextValue, getTimeValue,
 } from './controlValues'
 import type { FieldValue } from './controlValues'
 
@@ -8,6 +8,8 @@ export const REQUIRED_TEXT_MESSAGE = 'กรุณากรอกข้อมู
 export const REQUIRED_DATE_MESSAGE = 'กรุณาเลือกวันที่'
 export const REQUIRED_TIME_MESSAGE = 'กรุณาเลือกเวลา'
 export const REQUIRED_DATETIME_MESSAGE = 'กรุณาเลือกวันและเวลา'
+export const REQUIRED_DATE_RANGE_MESSAGE = 'กรุณาเลือกช่วงวันที่ให้ครบ'
+export const DATE_RANGE_ORDER_MESSAGE = 'วันสิ้นสุดต้องไม่ก่อนวันเริ่มต้น'
 export const REQUIRED_CHOICE_MESSAGE = 'กรุณาเลือกอย่างน้อย 1 รายการ'
 export const REQUIRED_SWITCH_MESSAGE = 'กรุณาเปิดตัวเลือกนี้'
 
@@ -52,6 +54,15 @@ export function validateControl(config: ControlConfig, data?: FormData): string 
       return checkRequired(config, getTextValue(config, data), REQUIRED_TEXT_MESSAGE)
     case 'date':
       return checkRequired(config, getDateValue(config, data), REQUIRED_DATE_MESSAGE)
+    case 'date_range': {
+      const { from, to } = getDateRangeValue(config, data)
+      // An end before the start is always an error, required or not.
+      if (from !== null && to !== null && to < from) return DATE_RANGE_ORDER_MESSAGE
+      if (config.required && (from === null || to === null)) {
+        return config.required_message ?? REQUIRED_DATE_RANGE_MESSAGE
+      }
+      return null
+    }
     case 'time':
       return checkRequired(config, getTimeValue(config, data), REQUIRED_TIME_MESSAGE)
     case 'datetime':

@@ -16,6 +16,11 @@ interface PickerFieldProps {
   disabled?: boolean
   required?: boolean
   error?: string
+  // For a box inside a group (date_range): no label of its own, red border without a message,
+  // and aria-describedby pointing at the group's message.
+  ariaLabel?: string
+  invalid?: boolean
+  describedBy?: string
   style?: ComponentStyle
   // Renders the picker dialog; call close() when it is done.
   renderPicker: (close: () => void) => ReactNode
@@ -23,7 +28,7 @@ interface PickerFieldProps {
 
 // Shared by date, time and datetime: a read-only box plus a button; either opens the picker.
 export default function PickerField({
-  id, label, text, placeholder, icon, disabled, required, error, style, renderPicker,
+  id, label, text, placeholder, icon, disabled, required, error, ariaLabel, invalid, describedBy, style, renderPicker,
 }: PickerFieldProps) {
   const [open, setOpen] = useState(false)
 
@@ -50,14 +55,17 @@ export default function PickerField({
           id={id}
           role="combobox"
           tabIndex={disabled ? -1 : 0}
-          className={`form-control flex-grow-1${disabled ? ' bg-body-secondary' : ''}${error ? ' is-invalid' : ''}`}
+          className={`form-control flex-grow-1${disabled ? ' bg-body-secondary' : ''}${error || invalid ? ' is-invalid' : ''}`}
           style={{ cursor: disabled ? 'not-allowed' : 'pointer', minHeight: 'calc(1.5em + 0.75rem + 2px)' }}
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-readonly="true"
           aria-disabled={disabled}
           {...invalidProps(id, required, error)}
+          aria-invalid={error || invalid ? true : undefined}
+          aria-describedby={error ? `${id}-error` : describedBy}
           aria-labelledby={label ? `${id}-label` : undefined}
+          aria-label={ariaLabel}
           onClick={openPicker}
           onKeyDown={onKeyDown}
         >

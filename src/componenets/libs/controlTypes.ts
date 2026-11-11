@@ -49,6 +49,21 @@ export type DateConfig = BaseControl & RequiredRule & {
   max_year?: number
 }
 
+// Two dates ("ตั้งแต่" / "ถึง"), each a YYYYMMDD Buddhist-era number or null.
+// Bind both ends with databinding_from + databinding_to, or neither.
+export type DateRangeConfig = BaseControl & RequiredRule & {
+  type: 'date_range'
+  label?: string
+  value_from?: number | null
+  value_to?: number | null
+  databinding_from?: string
+  databinding_to?: string
+  placeholder?: string
+  disabled?: boolean
+  min_year?: number
+  max_year?: number
+}
+
 export type TimeConfig = BaseControl & RequiredRule & {
   type: 'time'
   label?: string
@@ -193,6 +208,7 @@ export type BadgeConfig = BaseControl & {
 export type ControlConfig =
   | TextboxConfig
   | DateConfig
+  | DateRangeConfig
   | TimeConfig
   | DateTimeConfig
   | TextareaConfig
