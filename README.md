@@ -173,5 +173,15 @@ with the text left blank fails validation with "กรุณาระบุ" (`r
 to change it). The text is kept when the option is unselected. The Demo editor
 has a switch to add it.
 
+`steps` splits a form into pages: `"steps": [{ "title": "ข้อมูลส่วนตัว",
+"controls": [...] }, ...]`. One page shows at a time under a numbered bar (it
+shrinks to "ขั้นที่ 2 จาก 3" when narrow) with ย้อนกลับ / ถัดไป. "ถัดไป" checks
+only the current page and stays there, showing its errors, until it is valid;
+the bar jumps back to pages already reached. A page's `visible_if` skips it.
+`validateForm` checks every shown page, and when `FormBuilder` gets `showErrors`
+the first page with errors opens. `submit_text` adds a submit button on the last
+page that calls `onAction({ type: "button", id: "<id>_submit" })` once every page
+is valid. The current page is screen state, not saved in the JSON.
+
 `style` (on any control) accepts `padding`, `margin`, `font_size`, `color`, and
 `border`; `front_size` and `boarder` are accepted as aliases.

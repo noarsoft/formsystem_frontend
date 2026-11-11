@@ -81,6 +81,8 @@ function children(control: ControlConfig): ControlConfig[] {
       return control.controls ?? []
     case 'accordion':
       return control.items.flatMap((item) => item.controls)
+    case 'steps':
+      return control.steps.flatMap((step) => step.controls)
     default:
       return []
   }

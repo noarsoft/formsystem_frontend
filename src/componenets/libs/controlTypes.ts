@@ -287,6 +287,25 @@ export interface AccordionItemConfig {
   controls: ControlConfig[]
 }
 
+// One page of a `steps` control.
+export interface StepConfig {
+  title: string
+  controls: ControlConfig[]
+  // Skip this page when the condition does not hold (same rules as a control's visible_if).
+  visible_if?: VisibleCondition | VisibleCondition[]
+}
+
+// A multi-page form: one page at a time with ย้อนกลับ / ถัดไป. "ถัดไป" checks only the
+// current page; validateForm checks every (visible) page. The current page is screen state
+// and is not saved in the JSON.
+export type StepsConfig = BaseControl & {
+  type: 'steps'
+  steps: StepConfig[]
+  // Text of the submit button on the last page; it calls FormBuilder's onAction once every
+  // page is valid. Without it there is no submit button (the page has its own).
+  submit_text?: string
+}
+
 export type AccordionConfig = BaseControl & {
   type: 'accordion'
   always_open?: boolean
@@ -330,6 +349,7 @@ export type ControlConfig =
   | GridConfig
   | FlexConfig
   | AccordionConfig
+  | StepsConfig
   | CardConfig
   | BadgeConfig
 

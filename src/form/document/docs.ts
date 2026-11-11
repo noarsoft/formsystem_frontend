@@ -628,6 +628,73 @@ export const controlDocs: ControlDoc[] = [
     ],
   },
   {
+    type: 'steps',
+    group: 'Custom',
+    summary:
+      'ฟอร์มหลายหน้า แสดงทีละหน้าพร้อมแถบขั้นตอนและปุ่ม ย้อนกลับ / ถัดไป "ถัดไป" ตรวจเฉพาะหน้าปัจจุบัน ' +
+      '(ยังไม่ครบจะไม่ไปต่อและแสดงข้อความเตือน) คลิกชื่อขั้นเพื่อย้อนไปหน้าที่เคยผ่านได้ หน้าไหนมี visible_if ' +
+      'ที่ไม่จริงจะถูกข้าม validateForm ตรวจทุกหน้า และเมื่อ FormBuilder ได้ showErrors จะพาไปหน้าแรกที่ยังผิด ' +
+      'หน้าปัจจุบันไม่ถูกเก็บใน JSON จอแคบแถบขั้นตอนจะย่อเป็น "ขั้นที่ 2 จาก 3"',
+    props: [
+      {
+        name: 'steps',
+        type: '{ title: string; controls: ControlConfig[]; visible_if? }[]',
+        description: 'หน้าของฟอร์ม แต่ละหน้ามีชื่อและ control ของตัวเอง ใส่ visible_if เพื่อข้ามทั้งหน้าได้ (บังคับ)',
+      },
+      {
+        name: 'submit_text',
+        type: 'string',
+        description: 'ข้อความปุ่มส่งในหน้าสุดท้าย กดแล้วถ้าทุกหน้าผ่านจะเรียก onAction ของ FormBuilder ด้วย { type: "button", id: "<id>_submit" } ถ้าไม่ใส่จะไม่มีปุ่มส่ง',
+      },
+    ],
+    examples: [
+      {
+        type: 'steps', id: 'ex_steps', submit_text: 'ส่งใบสมัคร',
+        steps: [
+          {
+            title: 'ข้อมูลส่วนตัว',
+            controls: [
+              { type: 'textbox', id: 'ex_steps_name', label: 'ชื่อ-นามสกุล', databinding: 'name', required: true },
+              { type: 'date', id: 'ex_steps_birthday', label: 'วันเกิด', databinding: 'birthday' },
+              { type: 'switch', id: 'ex_steps_working', text: 'ทำงานแล้ว (เปิดเพื่อให้มีหน้า "ข้อมูลบริษัท")', databinding: 'working' },
+            ],
+          },
+          {
+            title: 'ข้อมูลบริษัท',
+            visible_if: { field: 'working', equals: 1 },
+            controls: [
+              { type: 'textbox', id: 'ex_steps_company', label: 'ชื่อบริษัท', databinding: 'company', required: true },
+              { type: 'textbox', id: 'ex_steps_position', label: 'ตำแหน่ง', databinding: 'position' },
+            ],
+          },
+          {
+            title: 'ช่องทางติดต่อ',
+            controls: [
+              { type: 'textbox', id: 'ex_steps_phone', label: 'เบอร์มือถือ', databinding: 'phone', format: 'phone_th', required: true },
+              { type: 'textbox', id: 'ex_steps_email', label: 'อีเมล', databinding: 'email', format: 'email' },
+            ],
+          },
+          {
+            title: 'ยืนยัน',
+            controls: [
+              { type: 'switch', id: 'ex_steps_consent', text: 'ยืนยันว่าข้อมูลถูกต้อง', databinding: 'consent', required: true },
+            ],
+          },
+        ],
+      },
+    ],
+    data: {
+      name: { type: 'string', value: '' },
+      birthday: { type: 'number', value: null },
+      working: { type: 'number', value: 0 },
+      company: { type: 'string', value: '' },
+      position: { type: 'string', value: '' },
+      phone: { type: 'string', value: '' },
+      email: { type: 'string', value: '' },
+      consent: { type: 'number', value: 0 },
+    },
+  },
+  {
     type: 'accordion',
     group: 'Custom',
     summary:

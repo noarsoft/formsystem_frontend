@@ -21,6 +21,7 @@ import Textbox from '../control/textbox/Textbox'
 import Accordion from '../custom/accordion/Accordion'
 import Badge from '../custom/badge/Badge'
 import Card from '../custom/card/Card'
+import Steps from '../custom/steps/Steps'
 import type { ButtonConfig, ControlConfig } from './controlTypes'
 import type { OtherInputProps } from '../control/OtherInput'
 import {
@@ -29,8 +30,8 @@ import {
 } from './controlValues'
 import type { ChoiceControl, FieldValue } from './controlValues'
 import { useFormContext } from './formContext'
-import { inputModeFor, isLocked, numberSettings, validateControl } from './validation'
-import { isVisible } from './visibility'
+import { inputModeFor, isLocked, numberSettings, validateControl, validateForm } from './validation'
+import { isVisible, visibleSteps } from './visibility'
 
 export interface ControlRendererProps {
   config: ControlConfig
@@ -438,6 +439,29 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
           }))}
         />
       )
+
+    case 'steps': {
+      const shown = visibleSteps(config, data)
+      return (
+        <Steps
+          id={id}
+          style={config.style}
+          submitText={config.submit_text}
+          onSubmit={() => onAction?.({ type: 'button', id: `${id}_submit`, text: config.submit_text ?? '' })}
+          pages={config.steps.map((step, index) => ({
+            title: step.title,
+            visible: shown.includes(index),
+            // Read-only forms can be paged through freely.
+            errors: formReadonly ? 0 : validateForm({ controls: step.controls }, data).length,
+            content: renderChildren(
+              step.controls,
+              (controls) => onChange({ ...config, steps: replaceAt(config.steps, index, { ...step, controls }) }),
+              onAction,
+            ),
+          }))}
+        />
+      )
+    }
 
     case 'card':
       return (

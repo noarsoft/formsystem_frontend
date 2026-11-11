@@ -189,7 +189,7 @@ test('custom controls render accordion, card and badge', () => {
 
 test('every documented control type renders its examples', () => {
   const types = new Set(docs.controlDocs.map((doc) => doc.type))
-  assert.equal(types.size, 21)
+  assert.equal(types.size, 22)
   for (const doc of docs.controlDocs) {
     assert.doesNotThrow(() => render(doc.examples, doc.data), doc.type)
   }
@@ -1292,4 +1292,56 @@ test('demo editor adds "อื่น ๆ" as the last option with its own text k
   assert.deepEqual(editor.findGrid(added.form).grid.controls.at(-1).other, { databinding: 'option_1_other' })
   const path = editor.listControls(added.form).find((item) => item.control.id === 'option_1').path
   assert.deepEqual(Object.keys(editor.removeControl(added.form, added.data, path).data), ['fname', 'hobby'])
+})
+
+// ---- steps (multi-page) ----
+
+const stepsForm = () => ({
+  controls: [{
+    type: 'steps', id: 's', submit_text: 'ส่ง',
+    steps: [
+      { title: 'หนึ่ง', controls: [{ type: 'textbox', id: 'a', databinding: 'a', required: true }] },
+      { title: 'สอง', visible_if: { field: 'more', equals: 1 }, controls: [{ type: 'textbox', id: 'b', databinding: 'b', required: true }] },
+      { title: 'สาม', controls: [{ type: 'card', controls: [{ type: 'textbox', id: 'c', databinding: 'c', required: true }] }] },
+    ],
+  }],
+})
+const stepsData = (extra = {}) => ({
+  a: { type: 'string', value: '' }, b: { type: 'string', value: '' }, c: { type: 'string', value: '' },
+  more: { type: 'number', value: 0 }, ...extra,
+})
+
+test('validateForm checks every shown page and skips pages hidden by visible_if', () => {
+  assert.deepEqual(validation.validateForm(stepsForm(), stepsData()).map((e) => e.id), ['a', 'c'])
+  assert.deepEqual(validation.validateForm(stepsForm(), stepsData({ more: { type: 'number', value: 1 } })).map((e) => e.id), ['a', 'b', 'c'])
+  assert.deepEqual(visibility.visibleSteps(stepsForm().controls[0], stepsData()), [0, 2])
+  assert.deepEqual(visibility.visibleIfFields(stepsForm().controls[0]), ['more'])
+})
+
+test('steps renders the bar, only the first page and the navigation', () => {
+  const html = render(stepsForm().controls, stepsData())
+  // Hidden page "สอง" is not in the bar.
+  assert.deepEqual([...html.matchAll(/<span class="fs-steps-title">([^<]+)<\/span>/g)].map((m) => m[1]), ['หนึ่ง', 'สาม'])
+  assert.match(html, /<li class="fs-steps-item is-current"><button type="button" class="fs-steps-button" aria-current="step"><span class="fs-steps-number" aria-hidden="true">1<\/span>/)
+  // Pages not reached yet cannot be clicked.
+  assert.match(html, /<li class="fs-steps-item "><button type="button" class="fs-steps-button" disabled="">/)
+  assert.match(html, /role="group" aria-label="ขั้นที่ 1 จาก 2: หนึ่ง"/)
+  assert.match(html, /id="a"/)
+  assert.doesNotMatch(html, /id="b"|id="c"/)
+  assert.match(html, />ขั้นที่ 1 จาก 2 · หนึ่ง</)
+  assert.match(html, /class="btn btn-primary">ถัดไป ›<\/button>/)
+  assert.doesNotMatch(html, /ย้อนกลับ|>ส่ง</)
+  // No errors before "ถัดไป" is pressed.
+  assert.doesNotMatch(html, /invalid/)
+  // Read-only forms hide the submit button.
+  const one = { controls: [{ type: 'steps', id: 'x', submit_text: 'ส่ง', steps: [{ title: 'only', controls: [] }] }] }
+  assert.match(render(one.controls), />ส่ง<\/button>/)
+  assert.doesNotMatch(render(one.controls, undefined, { readonly: true }), />ส่ง<\/button>/)
+})
+
+test('showErrors opens the first page that has errors', () => {
+  const d = stepsData({ a: { type: 'string', value: 'ok' } })
+  const html = render(stepsForm().controls, d, { showErrors: true })
+  assert.match(html, /aria-label="ขั้นที่ 2 จาก 2: สาม"/)
+  assert.match(html, /id="c" class="form-control is-invalid"/)
 })

@@ -1,5 +1,5 @@
 // visible_if: decides from the data whether a control is shown.
-import type { ControlConfig, FormData, VisibleCondition } from './controlTypes'
+import type { ControlConfig, FormData, StepsConfig, VisibleCondition } from './controlTypes'
 
 type Expected = string | number
 
@@ -44,19 +44,29 @@ function holds(name: string, condition: VisibleCondition, data: FormData | undef
   }
 }
 
-// True when the control has no visible_if, or every condition holds. A bad condition
-// (unknown data key, no operator, two operators) throws.
-export function isVisible(config: ControlConfig, data?: FormData): boolean {
-  const rule = config.visible_if
+// True when there is no rule, or every condition holds (`name` is used in error messages).
+export function conditionsHold(
+  name: string, rule: VisibleCondition | VisibleCondition[] | undefined, data?: FormData,
+): boolean {
   if (rule === undefined) return true
-  const name = config.id ?? config.type
   const conditions = Array.isArray(rule) ? rule : [rule]
   return conditions.every((condition) => holds(name, condition, data))
 }
 
+// True when the control has no visible_if, or every condition holds. A bad condition
+// (unknown data key, no operator, two operators) throws.
+export function isVisible(config: ControlConfig, data?: FormData): boolean {
+  return conditionsHold(config.id ?? config.type, config.visible_if, data)
+}
+
+// Indexes of the pages of a steps control that are shown (their visible_if holds).
+export function visibleSteps(config: StepsConfig, data?: FormData): number[] {
+  const name = config.id ?? config.type
+  return config.steps.flatMap((step, index) => (conditionsHold(`${name} step ${index + 1}`, step.visible_if, data) ? [index] : []))
+}
+
 // Data keys a control's visible_if reads (so the demo editor keeps them).
 export function visibleIfFields(config: ControlConfig): string[] {
-  const rule = config.visible_if
-  if (rule === undefined) return []
-  return (Array.isArray(rule) ? rule : [rule]).map((condition) => condition.field)
+  const rules = [config.visible_if, ...(config.type === 'steps' ? config.steps.map((step) => step.visible_if) : [])]
+  return rules.flatMap((rule) => (rule === undefined ? [] : (Array.isArray(rule) ? rule : [rule]).map((c) => c.field)))
 }

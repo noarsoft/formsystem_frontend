@@ -2,7 +2,7 @@ import type {
   ControlConfig, FormData, FormDocument, NumberConfig, TextareaConfig, TextboxConfig, TextFormat,
 } from './controlTypes'
 import { decimalPlaces, formatNumber } from './numberValue'
-import { isVisible } from './visibility'
+import { isVisible, visibleSteps } from './visibility'
 import {
   getChoiceState, getDateRangeValue, getOtherState, getDateTimeValue, getDateValue, getMatrixValues, getNumberFieldValue, getRatingValue, getSwitchValue, getTextValue,
   getTimeValue,
@@ -244,7 +244,7 @@ export function validateControl(config: ControlConfig, data?: FormData): string 
   }
 }
 
-function childGroups(config: ControlConfig): { path: string, controls: ControlConfig[] }[] {
+function childGroups(config: ControlConfig, data?: FormData): { path: string, controls: ControlConfig[] }[] {
   switch (config.type) {
     case 'container':
     case 'grid':
@@ -254,6 +254,9 @@ function childGroups(config: ControlConfig): { path: string, controls: ControlCo
       return [{ path: 'controls', controls: config.controls ?? [] }]
     case 'accordion':
       return config.items.map((item, index) => ({ path: `items[${index}].controls`, controls: item.controls }))
+    case 'steps':
+      // Every page that is not skipped by its visible_if.
+      return visibleSteps(config, data).map((index) => ({ path: `steps[${index}].controls`, controls: config.steps[index].controls }))
     default:
       return []
   }
@@ -270,7 +273,7 @@ export function validateForm(form: FormDocument, data?: FormData): ValidationErr
       if (!isVisible(config, data)) return
       const message = validateControl(config, data)
       if (message !== null) errors.push({ id: config.id ?? position, message })
-      for (const group of childGroups(config)) walk(group.controls, `${position}.${group.path}`)
+      for (const group of childGroups(config, data)) walk(group.controls, `${position}.${group.path}`)
     })
   }
   walk(form.controls, 'controls')

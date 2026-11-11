@@ -30,6 +30,8 @@ function PropTable({ props }: { props: PropDoc[] }) {
 function ControlSection({ doc }: { doc: ControlDoc }) {
   const [form, setForm] = useState<FormDocument>({ controls: doc.examples })
   const [data, setData] = useState<FormData | undefined>(doc.data)
+  // Shows what a button / steps submit sends to FormBuilder's onAction.
+  const [action, setAction] = useState<string | null>(null)
 
   return (
     <section id={`doc-${doc.type}`} className="mb-5">
@@ -42,7 +44,14 @@ function ControlSection({ doc }: { doc: ControlDoc }) {
         <div className="col-lg-6">
           <h4 className="h6">ตัวอย่างที่ใช้งานได้จริง</h4>
           <div className="border rounded p-3">
-            <FormBuilder form={form} onChange={setForm} data={data} onDataChange={setData} />
+            <FormBuilder
+              form={form}
+              onChange={setForm}
+              data={data}
+              onDataChange={setData}
+              onAction={(button) => setAction(`onAction: ${button.id ?? button.text}`)}
+            />
+            {action && <div role="status" className="small text-body-secondary mt-3">{action}</div>}
           </div>
         </div>
         <div className="col-lg-6">
