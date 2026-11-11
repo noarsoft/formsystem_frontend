@@ -12,11 +12,13 @@ let FormBuilder
 let componentStyle
 let docs
 let dates
+let validation
 
 before(async () => {
   server = await createServer({ server: { middlewareMode: true }, appType: 'custom' })
   dates = await server.ssrLoadModule('/src/componenets/libs/dateValue.ts')
   values = await server.ssrLoadModule('/src/componenets/libs/controlValues.ts')
+  validation = await server.ssrLoadModule('/src/componenets/libs/validation.ts')
   layout = await server.ssrLoadModule('/src/componenets/libs/gridLayout.ts')
   FormBuilder = (await server.ssrLoadModule('/src/componenets/libs/Formbuilder.tsx')).default
   componentStyle = (await server.ssrLoadModule('/src/componenets/libs/componentStyle.ts')).componentStyle
@@ -27,8 +29,8 @@ after(async () => {
   if (server) await server.close()
 })
 
-const render = (controls, data) => renderToStaticMarkup(
-  React.createElement(FormBuilder, { form: { controls }, data, onChange: () => {}, onDataChange: () => {} }),
+const render = (controls, data, props = {}) => renderToStaticMarkup(
+  React.createElement(FormBuilder, { form: { controls }, data, onChange: () => {}, onDataChange: () => {}, ...props }),
 )
 
 const data = {
@@ -128,7 +130,7 @@ test('assets/controls.json renders with assets/data.json bound', () => {
   assert.match(html, /grid-template-columns:repeat\(3, minmax\(0, 1fr\)\)/)
   assert.match(html, /grid-column:3 \/ span 1;grid-row:2 \/ span 1/)
   assert.match(html, /class="d-flex flex-row gap-3"/)
-  assert.match(html, /for="textbox1">Textbox 1<\/label>/)
+  assert.match(html, /for="textbox1">Textbox 1<span class="text-danger ms-1" aria-hidden="true">\*<\/span><\/label>/)
   assert.match(html, /value="piyavach"/)
   assert.match(html, /id="hobby-0"[^>]*aria-checked="false"/)
   assert.match(html, /id="hobby-1"[^>]*aria-checked="true"/)
@@ -258,4 +260,158 @@ test('password binds to a string data field', () => {
 
 test('unsupported control types fail explicitly', () => {
   assert.throws(() => render([{ type: 'nope' }]), /Unsupported control type: nope/)
+})
+
+// ---- validation: required ----
+
+test('isEmptyValue treats blank text, null and no selection as empty', () => {
+  for (const empty of ['', '   ', '\n\t', null, [], [0, 0, 0]]) {
+    assert.equal(validation.isEmptyValue(empty), true, JSON.stringify(empty))
+  }
+  for (const filled of ['a', ' a ', '0', 0, 25681118, [0, 1], [1]]) {
+    assert.equal(validation.isEmptyValue(filled), false, JSON.stringify(filled))
+  }
+})
+
+test('validateControl checks required text controls', () => {
+  const { REQUIRED_TEXT_MESSAGE } = validation
+  for (const type of ['textbox', 'password', 'textarea']) {
+    const config = { type, id: 't', required: true }
+    assert.equal(validation.validateControl({ ...config, value: '' }), REQUIRED_TEXT_MESSAGE, type)
+    assert.equal(validation.validateControl(config), REQUIRED_TEXT_MESSAGE, `${type} without value`)
+    assert.equal(validation.validateControl({ ...config, value: '  ' }), REQUIRED_TEXT_MESSAGE, `${type} spaces`)
+    assert.equal(validation.validateControl({ ...config, value: 'x' }), null, `${type} filled`)
+    assert.equal(validation.validateControl({ ...config, required: false, value: '' }), null, `${type} optional`)
+    assert.equal(validation.validateControl({ type, value: '' }), null, `${type} no rule`)
+  }
+  assert.equal(
+    validation.validateControl({ type: 'textbox', required: true, required_message: 'กรอกชื่อด้วย', value: '' }),
+    'กรอกชื่อด้วย',
+  )
+})
+
+test('validateControl reads bound values from data, not the inline value', () => {
+  const config = { type: 'textbox', id: 't', databinding: 'fname', required: true, value: '' }
+  assert.equal(validation.validateControl(config, data), null)
+  const blank = { ...data, fname: { type: 'string', value: '' } }
+  assert.equal(validation.validateControl({ ...config, value: 'inline' }, blank), validation.REQUIRED_TEXT_MESSAGE)
+  const hobby = { type: 'checkbox_group', id: 'h', databinding: 'hobby', required: true }
+  assert.equal(validation.validateControl(hobby, data), null)
+  const none = { ...data, hobby: { ...data.hobby, value: [0, 0, 0] } }
+  assert.equal(validation.validateControl(hobby, none), validation.REQUIRED_CHOICE_MESSAGE)
+  // A broken binding still fails loudly instead of passing validation.
+  assert.throws(() => validation.validateControl({ ...config, databinding: 'missing' }, data), /bound to "missing"/)
+})
+
+test('validateControl checks required date and choice controls', () => {
+  const { REQUIRED_DATE_MESSAGE, REQUIRED_CHOICE_MESSAGE } = validation
+  assert.equal(validation.validateControl({ type: 'date', required: true }), REQUIRED_DATE_MESSAGE)
+  assert.equal(validation.validateControl({ type: 'date', required: true, value: null }), REQUIRED_DATE_MESSAGE)
+  assert.equal(validation.validateControl({ type: 'date', required: true, value: 25681118 }), null)
+  const options = ['a', 'b', 'c']
+  for (const [type, multiple] of [['checkbox_group'], ['option'], ['dropdown', false], ['dropdown', true]]) {
+    const config = { type, required: true, options, multiple }
+    assert.equal(validation.validateControl(config), REQUIRED_CHOICE_MESSAGE, `${type} default value`)
+    assert.equal(validation.validateControl({ ...config, value: [0, 0, 0] }), REQUIRED_CHOICE_MESSAGE, type)
+    assert.equal(validation.validateControl({ ...config, value: [0, 1, 0] }), null, `${type} selected`)
+  }
+})
+
+test('controls without input never report errors', () => {
+  for (const config of [
+    { type: 'label', text: 'x', required: true },
+    { type: 'button', text: 'x', required: true },
+    { type: 'badge', text: 'x' },
+    { type: 'container', required: true, controls: [] },
+  ]) {
+    assert.equal(validation.validateControl(config), null, config.type)
+  }
+})
+
+test('validateForm walks nested controls in document order', () => {
+  const form = {
+    controls: [
+      { type: 'textbox', id: 'name', required: true, value: '' },
+      {
+        type: 'grid', columns: 2,
+        controls: [
+          { type: 'flex', is_horizontal: 1, controls: [{ type: 'textarea', required: true }] },
+          { type: 'card', controls: [{ type: 'date', id: 'when', required: true, required_message: 'เลือกวัน' }] },
+        ],
+      },
+      {
+        type: 'accordion',
+        items: [
+          { title: 'a', controls: [{ type: 'textbox', id: 'ok', required: true, value: 'filled' }] },
+          { title: 'b', controls: [{ type: 'option', id: 'level', required: true, options: ['x', 'y'] }] },
+        ],
+      },
+      { type: 'container', controls: [{ type: 'checkbox_group', id: 'bound', databinding: 'hobby', required: true }] },
+    ],
+  }
+  assert.deepEqual(validation.validateForm(form, data), [
+    { id: 'name', message: validation.REQUIRED_TEXT_MESSAGE },
+    { id: 'controls[1].controls[0].controls[0]', message: validation.REQUIRED_TEXT_MESSAGE },
+    { id: 'when', message: 'เลือกวัน' },
+    { id: 'level', message: validation.REQUIRED_CHOICE_MESSAGE },
+  ])
+  assert.deepEqual(validation.validateForm({ controls: [] }), [])
+})
+
+test('demo form is valid with its data and invalid once the data is cleared', () => {
+  const read = (name) => JSON.parse(readFileSync(new URL(`../src/assets/${name}`, import.meta.url), 'utf8'))
+  const form = read('controls.json')
+  const demo = read('data.json')
+  assert.deepEqual(validation.validateForm(form, demo), [])
+  const cleared = {
+    fname: { ...demo.fname, value: '' },
+    hobby: { ...demo.hobby, value: [0, 0, 0] },
+  }
+  assert.deepEqual(validation.validateForm(form, cleared), [
+    { id: 'textbox1', message: validation.REQUIRED_TEXT_MESSAGE },
+    { id: 'hobby', message: 'กรุณาเลือกงานอดิเรกอย่างน้อย 1 อย่าง' },
+  ])
+})
+
+const requiredControls = [
+  { type: 'textbox', id: 'tb', label: 'TB', required: true, value: '' },
+  { type: 'password', id: 'pw', label: 'PW', required: true, value: '' },
+  { type: 'textarea', id: 'ta', label: 'TA', required: true, value: '' },
+  { type: 'date', id: 'dt', label: 'DT', required: true },
+  { type: 'dropdown', id: 'dd', label: 'DD', required: true, options: ['a', 'b'] },
+  { type: 'checkbox_group', id: 'cb', label: 'CB', required: true, options: ['a', 'b'] },
+  { type: 'option', id: 'op', label: 'OP', required: true, options: ['a', 'b'], required_message: 'เลือกหนึ่งข้อ' },
+]
+
+test('required controls show * but hide errors until showErrors (or a change)', () => {
+  const html = render(requiredControls)
+  assert.equal(html.match(/<span class="text-danger ms-1" aria-hidden="true">\*<\/span>/g).length, 7)
+  assert.doesNotMatch(html, /invalid-feedback|is-invalid|aria-invalid/)
+  assert.match(html, /id="tb"[^>]*aria-required="true"/)
+})
+
+test('showErrors renders a red message under every empty required control', () => {
+  const html = render(requiredControls, undefined, { showErrors: true })
+  for (const id of ['tb', 'pw', 'ta']) {
+    assert.match(html, new RegExp(`id="${id}" class="form-control is-invalid"[^>]*aria-invalid="true" aria-describedby="${id}-error"`), id)
+    assert.match(html, new RegExp(`<div id="${id}-error" class="invalid-feedback d-block">กรุณากรอกข้อมูล</div>`), id)
+  }
+  assert.match(html, /id="dt"[^>]*class="form-control flex-grow-1 is-invalid"/)
+  assert.match(html, /<div id="dt-error" class="invalid-feedback d-block">กรุณาเลือกวันที่<\/div>/)
+  assert.match(html, /id="dd"[^>]*class="form-select fs-dropdown-toggle is-invalid"[^>]*aria-invalid="true"/)
+  assert.match(html, /<div id="dd-error" class="invalid-feedback d-block">กรุณาเลือกอย่างน้อย 1 รายการ<\/div>/)
+  assert.match(html, /role="group"[^>]*class="fs-choice-list is-invalid" aria-invalid="true" aria-describedby="cb-error"/)
+  assert.match(html, /role="radiogroup"[^>]*class="fs-choice-list is-invalid" aria-required="true" aria-invalid="true"/)
+  assert.match(html, /<div id="op-error" class="invalid-feedback d-block">เลือกหนึ่งข้อ<\/div>/)
+  assert.equal(html.match(/invalid-feedback/g).length, 7)
+})
+
+test('showErrors leaves filled and optional controls alone', () => {
+  const html = render([
+    { type: 'textbox', id: 'filled', required: true, value: 'x' },
+    { type: 'textbox', id: 'optional', value: '' },
+    { type: 'checkbox_group', id: 'picked', required: true, options: ['a'], value: [1] },
+    { type: 'textbox', id: 'bound', databinding: 'fname', required: true, value: '' },
+  ], data, { showErrors: true })
+  assert.doesNotMatch(html, /invalid-feedback|is-invalid|aria-invalid/)
 })

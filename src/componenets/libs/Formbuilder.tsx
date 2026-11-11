@@ -14,14 +14,17 @@ export interface FormBuilderProps {
   data?: FormData
   onDataChange?: (data: FormData) => void
   onAction?: (config: ButtonConfig) => void
+  // true = show every validation error (e.g. after a submit attempt); otherwise a control
+  // shows its error only after the user changes it. Check the whole form with validateForm().
+  showErrors?: boolean
   style?: ComponentStyle
 }
 
 export default function FormBuilder({
-  form, onChange, data, onDataChange, onAction, style,
+  form, onChange, data, onDataChange, onAction, showErrors = false, style,
 }: FormBuilderProps) {
   return (
-    <FormContext value={{ data, onDataChange }}>
+    <FormContext value={{ data, onDataChange, showErrors }}>
       <Container style={style}>
         {form.controls.map((config, index) => (
           <ControlRenderer

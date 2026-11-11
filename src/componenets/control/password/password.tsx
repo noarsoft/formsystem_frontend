@@ -10,18 +10,20 @@ interface PasswordProps {
   value: string
   placeholder?: string
   disabled?: boolean
+  required?: boolean
+  error?: string
   style?: ComponentStyle
   onChange: (value: string) => void
 }
 
 // A Textbox whose text is hidden until the toggle Button is pressed.
 export default function Password({
-  id, label, value, placeholder, disabled, style, onChange,
+  id, label, value, placeholder, disabled, required, error, style, onChange,
 }: PasswordProps) {
   const [visible, setVisible] = useState(false)
 
   return (
-    <Control id={id} label={label} style={style}>
+    <Control id={id} label={label} style={style} required={required}>
       <div className="d-flex gap-2 align-items-start">
         <div className="flex-grow-1">
           <Textbox
@@ -30,6 +32,8 @@ export default function Password({
             placeholder={placeholder}
             inputType={visible ? 'text' : 'password'}
             disabled={disabled}
+            required={required}
+            error={error}
             onChange={onChange}
           />
         </div>

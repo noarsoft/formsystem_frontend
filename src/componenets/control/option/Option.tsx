@@ -7,6 +7,8 @@ interface OptionProps {
   options: string[]
   value: number[]
   inline?: boolean
+  required?: boolean
+  error?: string
   style?: ComponentStyle
   onToggle: (index: number) => void
 }

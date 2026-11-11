@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import Control from '../Control'
+import { invalidProps } from '../../libs/validation'
 import Button from '../button/Button'
 import CalendarModal from './CalendarModal'
 import type { ComponentStyle } from '../../Component'
@@ -15,6 +16,8 @@ interface DateProps {
   value: number | null
   placeholder?: string
   disabled?: boolean
+  required?: boolean
+  error?: string
   minYear?: number
   maxYear?: number
   style?: ComponentStyle
@@ -23,7 +26,7 @@ interface DateProps {
 
 // Shows the date as dd/mm/yyyy (พ.ศ.) in a box; the box or the button opens the calendar modal.
 export default function DateField({
-  id, label, value, placeholder = 'วว/ดด/ปปปป', disabled, minYear, maxYear, style, onChange,
+  id, label, value, placeholder = 'วว/ดด/ปปปป', disabled, required, error, minYear, maxYear, style, onChange,
 }: DateProps) {
   const [open, setOpen] = useState(false)
   const boxRef = useRef<HTMLDivElement>(null)
@@ -50,19 +53,20 @@ export default function DateField({
   }
 
   return (
-    <Control id={id} label={label} style={style}>
+    <Control id={id} label={label} style={style} required={required} error={error}>
       <div className="d-flex gap-2 align-items-start">
         <div
           id={id}
           ref={boxRef}
           role="combobox"
           tabIndex={disabled ? -1 : 0}
-          className={`form-control flex-grow-1${disabled ? ' bg-body-secondary' : ''}`}
+          className={`form-control flex-grow-1${disabled ? ' bg-body-secondary' : ''}${error ? ' is-invalid' : ''}`}
           style={{ cursor: disabled ? 'not-allowed' : 'pointer', minHeight: 'calc(1.5em + 0.75rem + 2px)' }}
           aria-haspopup="dialog"
           aria-expanded={open}
           aria-readonly="true"
           aria-disabled={disabled}
+          {...invalidProps(id, required, error)}
           aria-labelledby={label ? `${id}-label` : undefined}
           onClick={openPicker}
           onKeyDown={onKeyDown}

@@ -80,6 +80,17 @@ export default function ControlDocument() {
         <code>{'{ "type": "number", "value": 25681118 }'}</code>
       </p>
 
+      <h3 className="h4 mt-4">Validation (required)</h3>
+      <p>
+        ช่องกรอกและช่องตัวเลือก (textbox, password, date, textarea, dropdown, checkbox_group, option) ตั้ง{' '}
+        <code>{'"required": true'}</code> ได้ จะมี <span className="text-danger">*</span> หลัง label
+        และถ้าค่าว่างจะแสดงข้อความสีแดงใต้ช่อง (เปลี่ยนข้อความด้วย <code>required_message</code>)
+        ข้อความจะขึ้นหลังผู้ใช้แก้ช่องนั้น หรือขึ้นทุกช่องพร้อมกันเมื่อส่ง{' '}
+        <code>{'<FormBuilder showErrors />'}</code> (เช่น หลังกดปุ่มส่ง) ตรวจทั้งฟอร์มด้วย{' '}
+        <code>validateForm(form, data)</code> จาก <code>libs/validation.ts</code> ซึ่งคืนรายการ{' '}
+        <code>{'{ id, message }'}</code> (อาร์เรย์ว่าง = ผ่าน)
+      </p>
+
       <h3 className="h4 mt-4">Properties ที่ทุก control ใช้ร่วมกัน</h3>
       <PropTable props={commonProps} />
 

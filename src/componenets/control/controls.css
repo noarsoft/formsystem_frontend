@@ -58,6 +58,10 @@
   background: #fff;
 }
 
+.fs-choice-list.is-invalid .fs-mark {
+  border-color: var(--bs-form-invalid-border-color);
+}
+
 .fs-choice-item:focus-visible .fs-mark {
   box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
 }

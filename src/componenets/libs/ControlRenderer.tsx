@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import type { ReactNode } from 'react'
 import Container from '../container/Container'
 import Flex from '../container/flex/Flex'
@@ -22,6 +22,7 @@ import {
 } from './controlValues'
 import type { FieldValue } from './controlValues'
 import { useFormContext } from './formContext'
+import { validateControl } from './validation'
 
 export interface ControlRendererProps {
   config: ControlConfig
@@ -46,11 +47,16 @@ function renderChildren(
 
 export default function ControlRenderer({ config, onChange, onAction }: ControlRendererProps) {
   const generatedId = useId()
-  const { data, onDataChange } = useFormContext()
+  const { data, onDataChange, showErrors } = useFormContext()
+  // The user has changed this control, so its validation error may be shown.
+  const [touched, setTouched] = useState(false)
   const id = config.id ?? generatedId
+  const message = validateControl(config, data)
+  const error = message !== null && (touched || showErrors) ? message : undefined
 
   // Bound controls write to the data; unbound ones keep their value inline.
   const commit = (value: FieldValue) => {
+    setTouched(true)
     if ('databinding' in config && config.databinding !== undefined) {
       onDataChange?.(updateData(data, config.databinding, value))
     } else {
@@ -64,6 +70,8 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
         <Textbox
           id={id}
           label={config.label}
+          required={config.required}
+          error={error}
           style={config.style}
           value={getTextValue(config, data)}
           placeholder={config.placeholder}
@@ -78,6 +86,8 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
         <Password
           id={id}
           label={config.label}
+          required={config.required}
+          error={error}
           style={config.style}
           value={getTextValue(config, data)}
           placeholder={config.placeholder}
@@ -91,6 +101,8 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
         <DateField
           id={id}
           label={config.label}
+          required={config.required}
+          error={error}
           style={config.style}
           value={getDateValue(config, data)}
           placeholder={config.placeholder}
@@ -106,6 +118,8 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
         <Textarea
           id={id}
           label={config.label}
+          required={config.required}
+          error={error}
           style={config.style}
           value={getTextValue(config, data)}
           placeholder={config.placeholder}
@@ -124,6 +138,8 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
         <Dropdown
           id={id}
           label={config.label}
+          required={config.required}
+          error={error}
           style={config.style}
           options={options}
           value={value}
@@ -139,6 +155,8 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
         <CheckboxGroup
           id={id}
           label={config.label}
+          required={config.required}
+          error={error}
           style={config.style}
           options={options}
           value={value}
@@ -154,6 +172,8 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
         <Option
           id={id}
           label={config.label}
+          required={config.required}
+          error={error}
           style={config.style}
           options={options}
           value={value}

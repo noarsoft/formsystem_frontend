@@ -16,7 +16,15 @@ interface BaseControl {
   style?: ComponentStyle
 }
 
-export type TextboxConfig = BaseControl & {
+// Validation for controls that take input. See libs/validation.ts.
+interface RequiredRule {
+  // true = the value must not be empty ('' / whitespace, null date, or no option selected).
+  required?: boolean
+  // Shown under the control instead of the default message.
+  required_message?: string
+}
+
+export type TextboxConfig = BaseControl & RequiredRule & {
   type: 'textbox'
   label?: string
   value?: string
@@ -26,7 +34,7 @@ export type TextboxConfig = BaseControl & {
   disabled?: boolean
 }
 
-export type PasswordConfig = BaseControl & {
+export type PasswordConfig = BaseControl & RequiredRule & {
   type: 'password'
   label?: string
   value?: string
@@ -35,7 +43,7 @@ export type PasswordConfig = BaseControl & {
   disabled?: boolean
 }
 
-export type DateConfig = BaseControl & {
+export type DateConfig = BaseControl & RequiredRule & {
   type: 'date'
   label?: string
   // YYYYMMDD in Buddhist Era (25681118 = 18/11/2568); null or missing = empty.
@@ -48,7 +56,7 @@ export type DateConfig = BaseControl & {
   max_year?: number
 }
 
-export type TextareaConfig = BaseControl & {
+export type TextareaConfig = BaseControl & RequiredRule & {
   type: 'textarea'
   label?: string
   value?: string
@@ -64,7 +72,7 @@ export type LabelConfig = BaseControl & {
   for?: string
 }
 
-export type DropdownConfig = BaseControl & {
+export type DropdownConfig = BaseControl & RequiredRule & {
   type: 'dropdown'
   label?: string
   options?: string[]
@@ -73,7 +81,7 @@ export type DropdownConfig = BaseControl & {
   multiple?: boolean
 }
 
-export type CheckboxGroupConfig = BaseControl & {
+export type CheckboxGroupConfig = BaseControl & RequiredRule & {
   type: 'checkbox_group'
   label?: string
   options?: string[]
@@ -82,7 +90,7 @@ export type CheckboxGroupConfig = BaseControl & {
   inline?: boolean
 }
 
-export type OptionConfig = BaseControl & {
+export type OptionConfig = BaseControl & RequiredRule & {
   type: 'option'
   label?: string
   options?: string[]

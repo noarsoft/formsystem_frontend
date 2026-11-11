@@ -1,5 +1,7 @@
 import type { KeyboardEvent } from 'react'
 import Component from '../Component'
+import { FieldError, RequiredMark } from './Control'
+import { invalidProps } from '../libs/validation'
 import type { ComponentStyle } from '../Component'
 import './controls.css'
 
@@ -10,13 +12,15 @@ interface ChoiceListProps {
   value: number[]
   kind: 'checkbox' | 'radio'
   inline?: boolean
+  required?: boolean
+  error?: string
   style?: ComponentStyle
   onToggle: (index: number) => void
 }
 
 // Shared by checkbox_group (kind 'checkbox') and option (kind 'radio').
 export default function ChoiceList({
-  id, label, options, value, kind, inline = false, style, onToggle,
+  id, label, options, value, kind, inline = false, required, error, style, onToggle,
 }: ChoiceListProps) {
   const checkedIndex = value.indexOf(1)
 
@@ -38,11 +42,12 @@ export default function ChoiceList({
 
   return (
     <Component style={style}>
-      {label && <div id={`${id}-label`} className="form-label">{label}</div>}
+      {label && <div id={`${id}-label`} className="form-label">{label}{required && <RequiredMark />}</div>}
       <div
         role={kind === 'radio' ? 'radiogroup' : 'group'}
         aria-labelledby={label ? `${id}-label` : undefined}
-        className={inline ? 'fs-choice-list is-inline' : 'fs-choice-list'}
+        className={`fs-choice-list${inline ? ' is-inline' : ''}${error ? ' is-invalid' : ''}`}
+        {...invalidProps(id, kind === 'radio' ? required : undefined, error)}
       >
         {options.map((option, index) => {
           const checked = value[index] === 1
@@ -65,6 +70,7 @@ export default function ChoiceList({
           )
         })}
       </div>
+      <FieldError id={id} error={error} />
     </Component>
   )
 }

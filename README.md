@@ -79,5 +79,22 @@ Every control is documented, with live examples, in `src/form/document`
 `libs/controlTypes.ts`, a case to `libs/ControlRenderer.tsx`, and an entry to
 `src/form/document/docs.ts`.
 
+Input controls (`textbox`, `password`, `date`, `textarea`, `dropdown`,
+`checkbox_group`, `option`) accept `required: true` and an optional
+`required_message`. A required control shows a red `*` after its label and, when
+its value is empty (blank or whitespace-only text, a `null` date, or no option
+selected), a red message under it (Bootstrap `is-invalid` / `invalid-feedback`).
+The message appears after the user changes that control, or for every control
+when `FormBuilder` gets `showErrors` (e.g. after a submit attempt). Check the whole
+form, including nested containers, with `validateForm(form, data)` from
+`libs/validation.ts`; it returns `{ id, message }[]` (empty = valid):
+
+```tsx
+const [submitted, setSubmitted] = useState(false)
+const errors = validateForm(form, data)
+<FormBuilder form={form} onChange={setForm} data={data} onDataChange={setData} showErrors={submitted} />
+<button onClick={() => { setSubmitted(true); if (errors.length === 0) save(data) }}>Submit</button>
+```
+
 `style` (on any control) accepts `padding`, `margin`, `font_size`, `color`, and
 `border`; `front_size` and `boarder` are accepted as aliases.

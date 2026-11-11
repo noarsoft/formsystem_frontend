@@ -23,6 +23,18 @@ const bindingProp: PropDoc = {
   description: 'key ใน data ที่ control นี้อ่าน/เขียน ถ้าระบุ ค่าใน data จะชนะ value ที่เขียนใน schema เสมอ',
 }
 
+const requiredProps: PropDoc[] = [
+  {
+    name: 'required',
+    type: 'boolean',
+    default: 'false',
+    description:
+      'ต้องมีค่า ถ้าว่าง (ข้อความว่าง/มีแต่ช่องว่าง, วันที่ null, ตัวเลือกไม่มี 1 เลย) จะแสดงข้อความแจ้งเตือนสีแดง ' +
+      'หลังผู้ใช้แก้ช่องนั้น หรือเมื่อ FormBuilder ได้ showErrors และมี * หลัง label',
+  },
+  { name: 'required_message', type: 'string', description: 'ข้อความแจ้งเตือนแทนข้อความมาตรฐาน' },
+]
+
 export const commonProps: PropDoc[] = [
   { name: 'type', type: 'string', description: 'ชนิดของ control (บังคับ) ดูรายการด้านล่าง' },
   { name: 'id', type: 'string', description: 'รหัสของ control ใช้เป็น id ใน DOM ด้วย ควรไม่ซ้ำกันในหน้าเดียว' },
@@ -48,11 +60,16 @@ export const controlDocs: ControlDoc[] = [
       { name: 'placeholder', type: 'string', description: 'ข้อความตัวอย่างในช่อง' },
       { name: 'input_type', type: "'text' | 'password' | 'email' | 'number' | 'tel' | 'url'", default: "'text'", description: 'ชนิดของ input' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'ปิดการแก้ไข' },
+      ...requiredProps,
       bindingProp,
     ],
     examples: [
       { type: 'textbox', id: 'ex_textbox', label: 'ชื่อ', placeholder: 'กรอกชื่อ', value: 'piyavach' },
       { type: 'textbox', id: 'ex_textbox_bound', label: 'ชื่อ (bind กับ fname)', databinding: 'fname', value: 'ถูก data override' },
+      {
+        type: 'textbox', id: 'ex_textbox_required', label: 'อีเมล (required — ลบข้อความออกเพื่อดูข้อความแจ้งเตือน)',
+        input_type: 'email', required: true, required_message: 'กรุณากรอกอีเมล', value: 'a@b.c',
+      },
     ],
     data: { fname: { type: 'string', value: 'piyavach' } },
   },
@@ -67,6 +84,7 @@ export const controlDocs: ControlDoc[] = [
       { name: 'value', type: 'string', default: "''", description: 'ค่าปัจจุบัน' },
       { name: 'placeholder', type: 'string', description: 'ข้อความตัวอย่างในช่อง' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'ปิดการแก้ไขช่องกรอก' },
+      ...requiredProps,
       bindingProp,
     ],
     examples: [
@@ -87,6 +105,7 @@ export const controlDocs: ControlDoc[] = [
       { name: 'min_year', type: 'number', default: 'ปีปัจจุบัน - 100', description: 'ปี พ.ศ. ต่ำสุดที่เลือกได้ (ขยายให้ครอบคลุมค่าปัจจุบันเสมอ)' },
       { name: 'max_year', type: 'number', default: 'ปีปัจจุบัน + 20', description: 'ปี พ.ศ. สูงสุดที่เลือกได้' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'ปิดการเลือก' },
+      ...requiredProps,
       {
         name: 'databinding',
         type: 'string',
@@ -109,6 +128,7 @@ export const controlDocs: ControlDoc[] = [
       { name: 'placeholder', type: 'string', description: 'ข้อความตัวอย่างในช่อง' },
       { name: 'rows', type: 'number', default: '3', description: 'จำนวนบรรทัดที่แสดง' },
       { name: 'disabled', type: 'boolean', default: 'false', description: 'ปิดการแก้ไข' },
+      ...requiredProps,
       bindingProp,
     ],
     examples: [
@@ -137,6 +157,7 @@ export const controlDocs: ControlDoc[] = [
       { name: 'options', type: 'string[]', description: 'ข้อความของแต่ละตัวเลือก (บังคับ ยกเว้นเมื่อ data มี options)' },
       { name: 'value', type: 'number[]', default: 'ศูนย์ทุกตัว', description: 'อาร์เรย์ 0/1 ความยาวเท่ากับ options' },
       { name: 'multiple', type: 'boolean', default: 'false', description: 'เลือกได้หลายตัว' },
+      ...requiredProps,
       bindingProp,
     ],
     examples: [
@@ -159,12 +180,13 @@ export const controlDocs: ControlDoc[] = [
       { name: 'options', type: 'string[]', description: 'ข้อความของแต่ละตัวเลือก (บังคับ ยกเว้นเมื่อ data มี options)' },
       { name: 'value', type: 'number[]', default: 'ศูนย์ทุกตัว', description: 'อาร์เรย์ 0/1 ความยาวเท่ากับ options' },
       { name: 'inline', type: 'boolean', default: 'false', description: 'วางตัวเลือกเรียงในแนวนอน' },
+      ...requiredProps,
       bindingProp,
     ],
     examples: [
       {
         type: 'checkbox_group', id: 'ex_checkbox_multi', label: 'งานอดิเรก',
-        options: ['อ่านหนังสือ', 'ดนตรี', 'กีฬา'], value: [1, 0, 1],
+        options: ['อ่านหนังสือ', 'ดนตรี', 'กีฬา'], value: [1, 0, 1], required: true,
       },
       { type: 'checkbox_group', id: 'ex_checkbox_bound', label: 'Hobby (bind กับ hobby)', databinding: 'hobby', inline: true },
     ],
@@ -183,6 +205,7 @@ export const controlDocs: ControlDoc[] = [
       { name: 'options', type: 'string[]', description: 'ข้อความของแต่ละตัวเลือก (บังคับ ยกเว้นเมื่อ data มี options)' },
       { name: 'value', type: 'number[]', default: 'ศูนย์ทุกตัว', description: 'อาร์เรย์ 0/1 ความยาวเท่ากับ options มี 1 ได้ไม่เกิน 1 ตัว' },
       { name: 'inline', type: 'boolean', default: 'false', description: 'วางตัวเลือกเรียงในแนวนอน' },
+      ...requiredProps,
       bindingProp,
     ],
     examples: [

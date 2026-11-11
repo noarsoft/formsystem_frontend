@@ -26,13 +26,16 @@
                             "label": "Textbox 1",
                             "databinding": "fname",
                             "placeholder": "Enter text here",
+                            "required": true,
                             "value": ""
                         },
                         {
                             "type": "checkbox_group",
                             "id": "hobby",
                             "label": "Hobby",
-                            "databinding": "hobby"
+                            "databinding": "hobby",
+                            "required": true,
+                            "required_message": "กรุณาเลือกงานอดิเรกอย่างน้อย 1 อย่าง"
                         }
                     ]
                 }

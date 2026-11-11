@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import Control from '../Control'
+import { invalidProps } from '../../libs/validation'
 import type { ComponentStyle } from '../../Component'
 import '../controls.css'
 
@@ -12,6 +13,8 @@ interface DropdownProps {
   multiple?: boolean
   // Single mode only: show the "-- เลือก --" entry that clears the selection.
   clearable?: boolean
+  required?: boolean
+  error?: string
   style?: ComponentStyle
   onChange: (value: number[]) => void
 }
@@ -26,7 +29,7 @@ const placeholder = '-- เลือก --'
 
 // A div-based combobox/listbox so the whole design can be styled freely.
 export default function Dropdown({
-  id, label, options, value, multiple = false, clearable = true, style, onChange,
+  id, label, options, value, multiple = false, clearable = true, required, error, style, onChange,
 }: DropdownProps) {
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
@@ -101,18 +104,19 @@ export default function Dropdown({
   }
 
   return (
-    <Control id={id} label={label} style={style}>
+    <Control id={id} label={label} style={style} required={required} error={error}>
       <div className="fs-dropdown" ref={rootRef}>
         <div
           id={id}
           role="combobox"
           tabIndex={0}
-          className="form-select fs-dropdown-toggle"
+          className={`form-select fs-dropdown-toggle${error ? ' is-invalid' : ''}`}
           aria-haspopup="listbox"
           aria-expanded={open}
           aria-controls={`${id}-list`}
           aria-labelledby={label ? `${id}-label` : undefined}
           aria-activedescendant={open ? `${id}-opt-${active}` : undefined}
+          {...invalidProps(id, required, error)}
           onClick={() => (open ? setOpen(false) : openMenu())}
           onKeyDown={onKeyDown}
         >
