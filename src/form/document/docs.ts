@@ -125,6 +125,41 @@ export const controlDocs: ControlDoc[] = [
     ],
   },
   {
+    type: 'switch',
+    group: 'Control',
+    summary:
+      'สวิตช์เปิด/ปิด (div role="switch") สำหรับคำถามใช่/ไม่ใช่ เช่น การยินยอม ค่าเก็บเป็น Number ' +
+      '1 = เปิด, 0 = ปิด คลิกหรือกด Space/Enter เพื่อสลับ ถ้าตั้ง required สวิตช์ต้องเปิดจึงจะผ่าน',
+    props: [
+      { name: 'label', type: 'string', description: 'หัวข้อเหนือสวิตช์' },
+      { name: 'text', type: 'string', description: 'ข้อความข้างสวิตช์ เช่น "ยินยอมให้เก็บข้อมูล"' },
+      { name: 'value', type: '0 | 1', default: '0', description: '1 = เปิด, 0 = ปิด ค่าอื่นจะ throw error' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'ปิดการสลับ' },
+      {
+        name: 'required',
+        type: 'boolean',
+        default: 'false',
+        description: 'สวิตช์ต้องเปิด (เช่น ต้องยินยอมก่อนส่ง) ถ้าปิดอยู่จะแสดงข้อความแจ้งเตือนสีแดง',
+      },
+      { name: 'required_message', type: 'string', default: "'กรุณาเปิดตัวเลือกนี้'", description: 'ข้อความแจ้งเตือนแทนข้อความมาตรฐาน' },
+      {
+        name: 'databinding',
+        type: 'string',
+        description: 'key ใน data ที่เป็น { "type": "number", "value": 1 } (null นับเป็นปิด) ค่าใน data ชนะ value ใน schema',
+      },
+    ],
+    examples: [
+      { type: 'switch', id: 'ex_switch', text: 'รับข่าวสารทางอีเมล', value: 1 },
+      {
+        type: 'switch', id: 'ex_switch_consent', label: 'การยินยอม (bind กับ consent, required)',
+        text: 'ยินยอมให้เก็บข้อมูลส่วนบุคคล', databinding: 'consent', required: true,
+        required_message: 'ต้องยินยอมก่อนส่งแบบฟอร์ม',
+      },
+      { type: 'switch', id: 'ex_switch_disabled', text: 'ปิดการใช้งาน (disabled)', value: 0, disabled: true },
+    ],
+    data: { consent: { type: 'number', value: 0 } },
+  },
+  {
     type: 'label',
     group: 'Control',
     summary: 'ข้อความป้ายกำกับ (form-label) ใช้แสดงหัวข้อ หรือผูกกับ control อื่นผ่าน for',

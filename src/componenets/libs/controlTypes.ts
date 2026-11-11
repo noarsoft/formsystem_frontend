@@ -18,7 +18,8 @@ interface BaseControl {
 
 // Validation for controls that take input. See libs/validation.ts.
 interface RequiredRule {
-  // true = the value must not be empty ('' / whitespace, null date, or no option selected).
+  // true = the value must not be empty ('' / whitespace, null date, or no option selected);
+  // for a switch it must be on.
   required?: boolean
   // Shown under the control instead of the default message.
   required_message?: string
@@ -55,6 +56,18 @@ export type TextareaConfig = BaseControl & RequiredRule & {
   databinding?: string
   placeholder?: string
   rows?: number
+  disabled?: boolean
+}
+
+export type SwitchConfig = BaseControl & RequiredRule & {
+  type: 'switch'
+  // Heading above the switch.
+  label?: string
+  // Text next to the switch, e.g. "ยินยอมให้เก็บข้อมูล".
+  text?: string
+  // 1 = on, 0 = off (default 0).
+  value?: 0 | 1
+  databinding?: string
   disabled?: boolean
 }
 
@@ -156,6 +169,7 @@ export type ControlConfig =
   | TextboxConfig
   | DateConfig
   | TextareaConfig
+  | SwitchConfig
   | LabelConfig
   | DropdownConfig
   | CheckboxGroupConfig

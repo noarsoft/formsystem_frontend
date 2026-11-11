@@ -10,13 +10,14 @@ import Label from '../control/label/Label'
 import Option from '../control/option/Option'
 import DateField from '../control/date/date'
 import Textarea from '../control/textarea/Textarea'
+import Switch from '../control/switch/Switch'
 import Textbox from '../control/textbox/Textbox'
 import Accordion from '../custom/accordion/Accordion'
 import Badge from '../custom/badge/Badge'
 import Card from '../custom/card/Card'
 import type { ButtonConfig, ControlConfig } from './controlTypes'
 import {
-  getChoiceState, getDateValue, getTextValue, replaceAt, toggleAccordionItem, toggleChoice,
+  getChoiceState, getDateValue, getSwitchValue, getTextValue, replaceAt, toggleAccordionItem, toggleChoice,
   updateData,
 } from './controlValues'
 import type { FieldValue } from './controlValues'
@@ -108,6 +109,21 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
           value={getTextValue(config, data)}
           placeholder={config.placeholder}
           rows={config.rows}
+          disabled={config.disabled}
+          onChange={commit}
+        />
+      )
+
+    case 'switch':
+      return (
+        <Switch
+          id={id}
+          label={config.label}
+          required={config.required}
+          error={error}
+          style={config.style}
+          text={config.text}
+          value={getSwitchValue(config, data)}
           disabled={config.disabled}
           onChange={commit}
         />

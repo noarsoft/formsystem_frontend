@@ -1,4 +1,4 @@
-/* Div-based checkbox / radio / dropdown. Colours come from Bootstrap variables. */
+/* Div-based checkbox / radio / dropdown. Colours come from the theme in src/index.css. */
 
 .fs-choice-list.is-inline {
   display: flex;
@@ -45,7 +45,7 @@
   content: '';
   width: 0.35rem;
   height: 0.65rem;
-  border: solid #fff;
+  border: solid var(--cb-charcoal-ink);
   border-width: 0 2px 2px 0;
   transform: translateY(-1px) rotate(45deg);
 }
@@ -55,7 +55,7 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: #fff;
+  background: var(--cb-charcoal-ink);
 }
 
 .fs-choice-list.is-invalid .fs-mark {
@@ -77,7 +77,7 @@
 
 .fs-dropdown-toggle:focus-visible {
   outline: 0;
-  border-color: #86b7fe;
+  border-color: var(--cb-tangerine);
   box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
 }
 
@@ -112,6 +112,62 @@
 }
 
 .fs-dropdown-item.is-selected {
-  color: var(--bs-primary);
+  color: var(--cb-accent-text);
   font-weight: 600;
+}
+
+/* Switch: off = white track with a Muted Text knob; on = Tangerine track, Charcoal Ink knob. */
+.fs-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.fs-switch-track {
+  position: relative;
+  flex: none;
+  width: 2.25rem;
+  height: 1.25rem;
+  border: var(--bs-border-width) solid var(--cb-muted-text);
+  border-radius: 1.25rem;
+  background: var(--bs-body-bg);
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.fs-switch-knob {
+  position: absolute;
+  top: 50%;
+  left: 0.1875rem;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--cb-muted-text);
+  transform: translateY(-50%);
+  transition: left 0.15s, background-color 0.15s;
+}
+
+.fs-switch.is-checked .fs-switch-track {
+  background: var(--cb-tangerine);
+  border-color: var(--cb-tangerine);
+}
+
+.fs-switch.is-checked .fs-switch-knob {
+  left: calc(100% - 0.9375rem);
+  background: var(--cb-charcoal-ink);
+}
+
+.fs-switch.is-invalid .fs-switch-track {
+  border-color: var(--bs-form-invalid-border-color);
+}
+
+.fs-switch.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.fs-switch:focus-visible .fs-switch-track {
+  box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
 }

@@ -1,10 +1,11 @@
 import type { ControlConfig, FormData, FormDocument } from './controlTypes'
-import { getChoiceState, getDateValue, getTextValue } from './controlValues'
+import { getChoiceState, getDateValue, getSwitchValue, getTextValue } from './controlValues'
 import type { FieldValue } from './controlValues'
 
 export const REQUIRED_TEXT_MESSAGE = 'กรุณากรอกข้อมูล'
 export const REQUIRED_DATE_MESSAGE = 'กรุณาเลือกวันที่'
 export const REQUIRED_CHOICE_MESSAGE = 'กรุณาเลือกอย่างน้อย 1 รายการ'
+export const REQUIRED_SWITCH_MESSAGE = 'กรุณาเปิดตัวเลือกนี้'
 
 export interface ValidationError {
   // The control's id, or its position (e.g. "controls[0].controls[1]") when it has none.
@@ -55,6 +56,10 @@ export function validateControl(config: ControlConfig, data?: FormData): string 
       return checkRequired(config, getChoiceState(config, true, data).value, REQUIRED_CHOICE_MESSAGE)
     case 'option':
       return checkRequired(config, getChoiceState(config, false, data).value, REQUIRED_CHOICE_MESSAGE)
+    case 'switch':
+      // A required switch must be on (e.g. a consent); off counts as empty.
+      if (!config.required || getSwitchValue(config, data) === 1) return null
+      return config.required_message ?? REQUIRED_SWITCH_MESSAGE
     default:
       return null
   }

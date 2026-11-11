@@ -183,7 +183,7 @@ test('custom controls render accordion, card and badge', () => {
 
 test('every documented control type renders its examples', () => {
   const types = new Set(docs.controlDocs.map((doc) => doc.type))
-  assert.equal(types.size, 14)
+  assert.equal(types.size, 15)
   for (const doc of docs.controlDocs) {
     assert.doesNotThrow(() => render(doc.examples, doc.data), doc.type)
   }
@@ -419,4 +419,63 @@ test('showErrors leaves filled and optional controls alone', () => {
     { type: 'textbox', id: 'bound', databinding: 'fname', required: true, value: '' },
   ], data, { showErrors: true })
   assert.doesNotMatch(html, /invalid-feedback|is-invalid|aria-invalid/)
+})
+
+// ---- switch ----
+
+test('switch renders a div role="switch" with on/off state, never a native checkbox', () => {
+  const html = render([
+    { type: 'switch', id: 'on', label: 'การยินยอม', text: 'ยินยอม', value: 1 },
+    { type: 'switch', id: 'off', text: 'ข่าวสาร' },
+    { type: 'switch', id: 'dis', text: 'ปิด', value: 0, disabled: true },
+  ])
+  assert.doesNotMatch(html, /<input/)
+  assert.match(html, /id="on" role="switch" aria-checked="true" aria-labelledby="on-label on-text" tabindex="0" class="fs-switch is-checked"/)
+  assert.match(html, /<div id="on-label" class="form-label">การยินยอม<\/div>/)
+  assert.match(html, /<span id="on-text">ยินยอม<\/span>/)
+  assert.match(html, /id="off" role="switch" aria-checked="false" aria-labelledby="off-text" tabindex="0" class="fs-switch"/)
+  assert.match(html, /id="dis" role="switch" aria-checked="false" aria-disabled="true" aria-labelledby="dis-text" tabindex="-1" class="fs-switch is-disabled"/)
+})
+
+test('switch values are 0/1 and bound switches read a number field', () => {
+  assert.equal(values.getSwitchValue({ type: 'switch' }), 0)
+  assert.equal(values.getSwitchValue({ type: 'switch', value: 1 }), 1)
+  assert.equal(values.getSwitchValue({ type: 'switch', value: null }), 0)
+  for (const bad of [2, -1, true, '1']) {
+    assert.throws(() => values.getSwitchValue({ type: 'switch', id: 's', value: bad }), /0 \(off\) or 1 \(on\)/, String(bad))
+  }
+  const consent = { type: 'number', value: 1 }
+  assert.equal(values.getSwitchValue({ type: 'switch', databinding: 'c', value: 0 }, { c: consent }), 1)
+  assert.equal(values.getSwitchValue({ type: 'switch', databinding: 'c' }, { c: { type: 'number', value: null } }), 0)
+  assert.throws(() => values.getSwitchValue({ type: 'switch', databinding: 'c' }, { c: { type: 'number', value: 5 } }), /Data binding "c" must be 0/)
+  assert.throws(() => values.getSwitchValue({ type: 'switch', databinding: 'fname' }, data), /number field/)
+  assert.throws(() => values.getSwitchValue({ type: 'switch', databinding: 'hobby' }, data), /number field/)
+  assert.throws(() => values.getSwitchValue({ type: 'switch', id: 's', databinding: 'missing' }, data), /bound to "missing"/)
+  assert.deepEqual(values.updateData({ c: consent }, 'c', 0), { c: { type: 'number', value: 0 } })
+  assert.equal(consent.value, 1)
+  assert.equal(render([{ type: 'switch', id: 'b', databinding: 'c', value: 0 }], { c: consent }).includes('aria-checked="true"'), true)
+})
+
+test('a required switch must be on', () => {
+  const config = { type: 'switch', id: 's', required: true }
+  assert.equal(validation.validateControl(config), validation.REQUIRED_SWITCH_MESSAGE)
+  assert.equal(validation.validateControl({ ...config, value: 0 }), validation.REQUIRED_SWITCH_MESSAGE)
+  assert.equal(validation.validateControl({ ...config, value: 1 }), null)
+  assert.equal(validation.validateControl({ ...config, required: false }), null)
+  assert.equal(validation.validateControl({ ...config, required_message: 'ต้องยินยอม' }), 'ต้องยินยอม')
+  assert.equal(validation.validateControl({ ...config, databinding: 'c' }, { c: { type: 'number', value: 1 } }), null)
+  assert.deepEqual(validation.validateForm({ controls: [{ type: 'card', controls: [config] }] }), [
+    { id: 's', message: validation.REQUIRED_SWITCH_MESSAGE },
+  ])
+})
+
+test('showErrors marks an off required switch and shows its message', () => {
+  const controls = [{ type: 'switch', id: 'c', label: 'ยินยอม', text: 'ยินยอมให้เก็บข้อมูล', required: true }]
+  const quiet = render(controls)
+  assert.match(quiet, /ยินยอม<span class="text-danger ms-1" aria-hidden="true">\*<\/span>/)
+  assert.doesNotMatch(quiet, /invalid/)
+  const html = render(controls, undefined, { showErrors: true })
+  assert.match(html, /class="fs-switch is-invalid" aria-required="true" aria-invalid="true" aria-describedby="c-error"/)
+  assert.match(html, /<div id="c-error" class="invalid-feedback d-block">กรุณาเปิดตัวเลือกนี้<\/div>/)
+  assert.doesNotMatch(render([{ ...controls[0], value: 1 }], undefined, { showErrors: true }), /invalid/)
 })

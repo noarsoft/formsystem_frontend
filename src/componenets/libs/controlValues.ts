@@ -1,6 +1,6 @@
 import type {
   AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DropdownConfig, FormData,
-  OptionConfig, TextareaConfig, TextboxConfig,
+  OptionConfig, SwitchConfig, TextareaConfig, TextboxConfig,
 } from './controlTypes'
 import { parseDateNumber } from './dateValue'
 
@@ -113,6 +113,24 @@ export function getDateValue(config: DateConfig, data?: FormData): number | null
     throw new Error(`${name} must be null or a valid YYYYMMDD Buddhist-era date`)
   }
   return value as number | null
+}
+
+// 1 = on, 0 = off. A bound switch reads a number field; null there counts as off.
+export function getSwitchValue(config: SwitchConfig, data?: FormData): 0 | 1 {
+  let name = `Control "${controlName(config)}"`
+  let value: unknown = config.value ?? 0
+  if (config.databinding !== undefined) {
+    const field = getField(config, config.databinding, data)
+    if (field.type !== 'number' || field.is_array === 1) {
+      throw new Error(`Data binding "${config.databinding}" must be a number field`)
+    }
+    name = `Data binding "${config.databinding}"`
+    value = field.value ?? 0
+  }
+  if (value !== 0 && value !== 1) {
+    throw new Error(`${name} must be 0 (off) or 1 (on)`)
+  }
+  return value
 }
 
 export function toggleChoice(value: number[], index: number, multiple: boolean): number[] {

@@ -58,7 +58,7 @@ function Example() {
 }
 ```
 
-Controls: `textbox`, `date`, `textarea`, `label`, `dropdown`, `checkbox_group`, `option`,
+Controls: `textbox`, `date`, `textarea`, `switch`, `label`, `dropdown`, `checkbox_group`, `option`,
 `button` (controls); `container`, `grid`, `flex` (containers); `accordion`,
 `card`, `badge` (custom, in `src/componenets/custom`). A password field is a
 `textbox` with `input_type: "password"`: the text is hidden and a แสดง/ซ่อน
@@ -67,7 +67,9 @@ button toggles it (there is no separate `password` control). Choice controls use
 `checkbox_group` selects any number, `option` selects at most one, and
 `dropdown` is single unless `multiple: true`. `date` stores a Buddhist-era
 number `YYYYMMDD` (25681118 = 18/11/2568) and shows `dd/mm/yyyy`; bind it to
-`{ "type": "number", "value": 25681118 }` (`null` = empty). `dropdown`,
+`{ "type": "number", "value": 25681118 }` (`null` = empty). `switch` is an on/off
+toggle (div with `role="switch"`) storing `1` (on) or `0` (off); bind it to
+`{ "type": "number", "value": 0 }` (`null` = off). A required switch must be on. `dropdown`,
 `checkbox_group` and
 `option` are div-based (ARIA roles + keyboard support, styled in
 `control/controls.css`) rather than native `select` / checkbox / radio inputs.
@@ -82,7 +84,7 @@ Every control is documented, with live examples, in `src/form/document`
 `src/form/document/docs.ts`.
 
 Input controls (`textbox`, `date`, `textarea`, `dropdown`,
-`checkbox_group`, `option`) accept `required: true` and an optional
+`checkbox_group`, `option`, `switch`) accept `required: true` and an optional
 `required_message`. A required control shows a red `*` after its label and, when
 its value is empty (blank or whitespace-only text, a `null` date, or no option
 selected), a red message under it (Bootstrap `is-invalid` / `invalid-feedback`).
