@@ -77,12 +77,13 @@ export default function ControlDocument() {
         ช่องข้อความใช้ <code>{'{ "type": "string", "value": "..." }'}</code> ส่วนตัวเลือกใช้{' '}
         <code>{'{ "type": "number", "is_array": 1, "options": [...], "value": [0, 1] }'}</code>{' '}
         (<code>options</code> ใน data ชนะ <code>options</code> ใน schema) ส่วนวันที่ใช้{' '}
-        <code>{'{ "type": "number", "value": 25681118 }'}</code>
+        <code>{'{ "type": "number", "value": 25681118 }'}</code> เวลาใช้ <code>1430</code>{' '}
+        และวันเวลาใช้ <code>256811181430</code>
       </p>
 
       <h3 className="h4 mt-4">Validation (required)</h3>
       <p>
-        ช่องกรอกและช่องตัวเลือก (textbox, date, textarea, dropdown, checkbox_group, option, switch) ตั้ง{' '}
+        ช่องกรอกและช่องตัวเลือก (textbox, date, time, datetime, textarea, dropdown, checkbox_group, option, switch) ตั้ง{' '}
         <code>{'"required": true'}</code> ได้ จะมี <span className="text-danger">*</span> หลัง label
         และถ้าค่าว่าง (สำหรับ switch คือยังปิดอยู่) จะแสดงข้อความสีแดงใต้ช่อง (เปลี่ยนข้อความด้วย <code>required_message</code>)
         ข้อความจะขึ้นหลังผู้ใช้แก้ช่องนั้น หรือขึ้นทุกช่องพร้อมกันเมื่อส่ง{' '}

@@ -58,7 +58,7 @@ function Example() {
 }
 ```
 
-Controls: `textbox`, `date`, `textarea`, `switch`, `label`, `dropdown`, `checkbox_group`, `option`,
+Controls: `textbox`, `date`, `time`, `datetime`, `textarea`, `switch`, `label`, `dropdown`, `checkbox_group`, `option`,
 `button` (controls); `container`, `grid`, `flex` (containers); `accordion`,
 `card`, `badge` (custom, in `src/componenets/custom`). A password field is a
 `textbox` with `input_type: "password"`: the text is hidden and a แสดง/ซ่อน
@@ -67,7 +67,10 @@ button toggles it (there is no separate `password` control). Choice controls use
 `checkbox_group` selects any number, `option` selects at most one, and
 `dropdown` is single unless `multiple: true`. `date` stores a Buddhist-era
 number `YYYYMMDD` (25681118 = 18/11/2568) and shows `dd/mm/yyyy`; bind it to
-`{ "type": "number", "value": 25681118 }` (`null` = empty). `switch` is an on/off
+`{ "type": "number", "value": 25681118 }` (`null` = empty). `time` stores `HHMM`
+(1430 = 14:30) and `datetime` stores a Buddhist-era `YYYYMMDDHHMM`
+(256811181430 = 18/11/2568 14:30), both bound to number fields; their pickers
+offer minutes every `minute_step` (default 1). `switch` is an on/off
 toggle (div with `role="switch"`) storing `1` (on) or `0` (off); bind it to
 `{ "type": "number", "value": 0 }` (`null` = off). A required switch must be on. `dropdown`,
 `checkbox_group` and
@@ -83,7 +86,7 @@ Every control is documented, with live examples, in `src/form/document`
 `libs/controlTypes.ts`, a case to `libs/ControlRenderer.tsx`, and an entry to
 `src/form/document/docs.ts`.
 
-Input controls (`textbox`, `date`, `textarea`, `dropdown`,
+Input controls (`textbox`, `date`, `time`, `datetime`, `textarea`, `dropdown`,
 `checkbox_group`, `option`, `switch`) accept `required: true` and an optional
 `required_message`. A required control shows a red `*` after its label and, when
 its value is empty (blank or whitespace-only text, a `null` date, or no option

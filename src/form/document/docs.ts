@@ -29,7 +29,7 @@ const requiredProps: PropDoc[] = [
     type: 'boolean',
     default: 'false',
     description:
-      'ต้องมีค่า ถ้าว่าง (ข้อความว่าง/มีแต่ช่องว่าง, วันที่ null, ตัวเลือกไม่มี 1 เลย) จะแสดงข้อความแจ้งเตือนสีแดง ' +
+      'ต้องมีค่า ถ้าว่าง (ข้อความว่าง/มีแต่ช่องว่าง, วันที่/เวลา null, ตัวเลือกไม่มี 1 เลย) จะแสดงข้อความแจ้งเตือนสีแดง ' +
       'หลังผู้ใช้แก้ช่องนั้น หรือเมื่อ FormBuilder ได้ showErrors และมี * หลัง label',
   },
   { name: 'required_message', type: 'string', description: 'ข้อความแจ้งเตือนแทนข้อความมาตรฐาน' },
@@ -106,6 +106,64 @@ export const controlDocs: ControlDoc[] = [
       { type: 'date', id: 'ex_date_bound', label: 'วันเกิด (bind กับ birthday)', databinding: 'birthday', min_year: 2450 },
     ],
     data: { birthday: { type: 'number', value: 25430229 } },
+  },
+  {
+    type: 'time',
+    group: 'Control',
+    summary:
+      'เวลา ค่าเก็บเป็น Number รูปแบบ HHMM เช่น 1430 = 14:30 (0 = 00:00) แสดงในกล่องเป็น HH:mm ' +
+      'คลิกกล่องหรือปุ่ม 🕒 เพื่อเลือกชั่วโมง/นาที แล้วกด "ตกลง" มีปุ่ม "ล้างค่า" และ "ตอนนี้" ค่าว่างเป็น null',
+    props: [
+      { name: 'label', type: 'string', description: 'ข้อความป้ายกำกับ' },
+      { name: 'value', type: 'number | null', default: 'null', description: 'HHMM (ชั่วโมง 0-23, นาที 0-59) ค่าอื่นจะ throw error' },
+      { name: 'placeholder', type: 'string', default: "'ชช:นน'", description: 'ข้อความเมื่อยังไม่มีค่า' },
+      { name: 'minute_step', type: 'number', default: '1', description: 'นาทีที่ให้เลือกทุก ๆ N นาที (1-60) เช่น 15 = 00, 15, 30, 45' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'ปิดการเลือก' },
+      ...requiredProps,
+      {
+        name: 'databinding',
+        type: 'string',
+        description: 'key ใน data ที่เป็น { "type": "number", "value": 1430 } (value เป็น null ได้) ค่าใน data ชนะ value ใน schema',
+      },
+    ],
+    examples: [
+      { type: 'time', id: 'ex_time', label: 'เวลานัด', value: 1430 },
+      {
+        type: 'time', id: 'ex_time_bound', label: 'เวลาเข้างาน (bind กับ start_time, ทุก 15 นาที, required)',
+        databinding: 'start_time', minute_step: 15, required: true,
+      },
+    ],
+    data: { start_time: { type: 'number', value: 830 } },
+  },
+  {
+    type: 'datetime',
+    group: 'Control',
+    summary:
+      'วันและเวลาแบบพุทธศักราช ค่าเก็บเป็น Number รูปแบบ YYYYMMDDHHMM เช่น 256811181430 = 18/11/2568 14:30 ' +
+      'แสดงเป็น dd/mm/yyyy HH:mm เปิดปฏิทินพร้อมช่องเลือกเวลา เลือกวัน + เวลาแล้วกด "ตกลง" ค่าว่างเป็น null',
+    props: [
+      { name: 'label', type: 'string', description: 'ข้อความป้ายกำกับ' },
+      { name: 'value', type: 'number | null', default: 'null', description: 'YYYYMMDDHHMM ปี พ.ศ. ถ้าไม่ใช่วันเวลาที่มีอยู่จริงจะ throw error' },
+      { name: 'placeholder', type: 'string', default: "'วว/ดด/ปปปป ชช:นน'", description: 'ข้อความเมื่อยังไม่มีค่า' },
+      { name: 'min_year', type: 'number', default: 'ปีปัจจุบัน - 100', description: 'ปี พ.ศ. ต่ำสุดที่เลือกได้' },
+      { name: 'max_year', type: 'number', default: 'ปีปัจจุบัน + 20', description: 'ปี พ.ศ. สูงสุดที่เลือกได้' },
+      { name: 'minute_step', type: 'number', default: '1', description: 'นาทีที่ให้เลือกทุก ๆ N นาที (1-60)' },
+      { name: 'disabled', type: 'boolean', default: 'false', description: 'ปิดการเลือก' },
+      ...requiredProps,
+      {
+        name: 'databinding',
+        type: 'string',
+        description: 'key ใน data ที่เป็น { "type": "number", "value": 256811181430 } (value เป็น null ได้) ค่าใน data ชนะ value ใน schema',
+      },
+    ],
+    examples: [
+      { type: 'datetime', id: 'ex_datetime', label: 'วันเวลานัดหมาย', value: 256811181430 },
+      {
+        type: 'datetime', id: 'ex_datetime_bound', label: 'เริ่มกิจกรรม (bind กับ starts_at, ทุก 30 นาที, required)',
+        databinding: 'starts_at', minute_step: 30, required: true,
+      },
+    ],
+    data: { starts_at: { type: 'number', value: null } },
   },
   {
     type: 'textarea',

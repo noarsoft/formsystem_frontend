@@ -1,18 +1,23 @@
-import { useEffect, useRef, useState } from 'react'
-import type { KeyboardEvent } from 'react'
-import { createPortal } from 'react-dom'
+import { useState } from 'react'
 import Dropdown from '../dropdown/Dropdown'
+import PickerModal from './PickerModal'
+import TimePicker from '../time/TimePicker'
 import {
-  daysInMonth, firstWeekday, thaiMonths, todayParts, toDateNumber, weekdayLabels,
+  daysInMonth, firstWeekday, nowTimeParts, roundTimeDown, thaiMonths, todayParts, toDateNumber,
+  toDateTimeNumber, weekdayLabels,
 } from '../../libs/dateValue'
-import type { DateParts } from '../../libs/dateValue'
+import type { DateParts, TimeParts } from '../../libs/dateValue'
 
 interface CalendarModalProps {
   id: string
   value: DateParts | null
   minYear: number
   maxYear: number
-  // A YYYYMMDD Buddhist-era number, or null to clear the date.
+  // datetime: also pick a time, then confirm with "ตกลง" (a day click no longer closes).
+  withTime?: boolean
+  time?: TimeParts | null
+  minuteStep?: number
+  // YYYYMMDD (or YYYYMMDDHHMM with withTime) in Buddhist Era, or null to clear.
   onSelect: (value: number | null) => void
   onClose: () => void
 }
@@ -20,16 +25,14 @@ interface CalendarModalProps {
 const clamp = (n: number, min: number, max: number) => Math.min(Math.max(n, min), max)
 
 export default function CalendarModal({
-  id, value, minYear, maxYear, onSelect, onClose,
+  id, value, minYear, maxYear, withTime = false, time = null, minuteStep = 1, onSelect, onClose,
 }: CalendarModalProps) {
   const today = todayParts()
   const start = value ?? today
   const [view, setView] = useState({ year: clamp(start.year, minYear, maxYear), month: start.month })
-  const dialogRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    dialogRef.current?.focus()
-  }, [])
+  // With time, the chosen day and time wait here until "ตกลง".
+  const [pendingDate, setPendingDate] = useState<DateParts | null>(value)
+  const [pendingTime, setPendingTime] = useState<TimeParts>(time ?? roundTimeDown(nowTimeParts(), minuteStep))
 
   const years = Array.from({ length: maxYear - minYear + 1 }, (_, i) => minYear + i)
   const canGo = (step: number) => {
@@ -46,121 +49,126 @@ export default function CalendarModal({
   const isSame = (parts: DateParts | null, day: number) =>
     parts !== null && parts.year === view.year && parts.month === view.month && parts.day === day
   const todayInRange = today.year >= minYear && today.year <= maxYear
+  const selectedDate = withTime ? pendingDate : value
 
-  // Dropdown calls preventDefault on Escape when it closes its own list.
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape' && !event.defaultPrevented) onClose()
+  const pickDay = (day: number) => {
+    const parts = { year: view.year, month: view.month, day }
+    if (withTime) setPendingDate(parts)
+    else onSelect(toDateNumber(parts))
+  }
+  const pickNow = () => {
+    if (!withTime) {
+      onSelect(toDateNumber(today))
+      return
+    }
+    setPendingDate(today)
+    setPendingTime(roundTimeDown(nowTimeParts(), minuteStep))
+    setView({ year: today.year, month: today.month })
   }
 
-  return createPortal(
-    <>
-      <div className="modal-backdrop show" />
-      <div
-        ref={dialogRef}
-        className="modal d-block"
-        role="dialog"
-        aria-modal="true"
-        aria-label="เลือกวันที่"
-        tabIndex={-1}
-        onKeyDown={onKeyDown}
-        onMouseDown={(event) => {
-          if (event.target === event.currentTarget) onClose()
-        }}
-      >
-        <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: 360 }}>
-          <div className="modal-content">
-            <div className="modal-header py-2">
-              <h2 className="modal-title fs-6">เลือกวันที่ (พ.ศ.)</h2>
-              <button type="button" className="btn-close" aria-label="ปิด" onClick={onClose} />
-            </div>
-
-            <div className="modal-body">
-              <div className="d-flex align-items-start gap-2 mb-3">
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  aria-label="เดือนก่อนหน้า"
-                  disabled={!canGo(-1)}
-                  onClick={() => go(-1)}
-                >
-                  ‹
-                </button>
-                <div className="flex-grow-1" style={{ minWidth: 0 }}>
-                  <Dropdown
-                    id={`${id}-month`}
-                    options={thaiMonths}
-                    value={thaiMonths.map((_, index) => (index + 1 === view.month ? 1 : 0))}
-                    clearable={false}
-                    onChange={(next) => {
-                      const index = next.indexOf(1)
-                      if (index >= 0) setView((current) => ({ ...current, month: index + 1 }))
-                    }}
-                  />
-                </div>
-                <div style={{ width: 110 }}>
-                  <Dropdown
-                    id={`${id}-year`}
-                    options={years.map(String)}
-                    value={years.map((year) => (year === view.year ? 1 : 0))}
-                    clearable={false}
-                    onChange={(next) => {
-                      const index = next.indexOf(1)
-                      if (index >= 0) setView((current) => ({ ...current, year: years[index] }))
-                    }}
-                  />
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  aria-label="เดือนถัดไป"
-                  disabled={!canGo(1)}
-                  onClick={() => go(1)}
-                >
-                  ›
-                </button>
-              </div>
-
-              <div className="d-grid" style={{ gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
-                {weekdayLabels.map((label) => (
-                  <div key={label} className="text-center small fw-semibold text-body-secondary">{label}</div>
-                ))}
-                {Array.from({ length: blanks }, (_, i) => <div key={`blank-${i}`} />)}
-                {days.map((day) => {
-                  const selected = isSame(value, day)
-                  const style = selected ? 'btn-primary' : isSame(today, day) ? 'btn-outline-primary' : 'btn-light'
-                  return (
-                    <button
-                      key={day}
-                      type="button"
-                      className={`btn btn-sm ${style}`}
-                      aria-pressed={selected}
-                      aria-label={`${day} ${thaiMonths[view.month - 1]} ${view.year}`}
-                      onClick={() => onSelect(toDateNumber({ year: view.year, month: view.month, day }))}
-                    >
-                      {day}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            <div className="modal-footer py-2">
-              <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => onSelect(null)}>
-                ล้างค่า
-              </button>
-              <button
-                type="button"
-                className="btn btn-outline-primary btn-sm"
-                disabled={!todayInRange}
-                onClick={() => onSelect(toDateNumber(today))}
-              >
-                วันนี้
-              </button>
-            </div>
-          </div>
+  return (
+    <PickerModal
+      title={withTime ? 'เลือกวันและเวลา (พ.ศ.)' : 'เลือกวันที่ (พ.ศ.)'}
+      onClose={onClose}
+      footer={(
+        <>
+          <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => onSelect(null)}>
+            ล้างค่า
+          </button>
+          <button
+            type="button"
+            className="btn btn-outline-primary btn-sm"
+            disabled={!todayInRange}
+            onClick={pickNow}
+          >
+            {withTime ? 'ตอนนี้' : 'วันนี้'}
+          </button>
+          {withTime && (
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              disabled={pendingDate === null}
+              onClick={() => pendingDate && onSelect(toDateTimeNumber({ ...pendingDate, ...pendingTime }))}
+            >
+              ตกลง
+            </button>
+          )}
+        </>
+      )}
+    >
+      <div className="d-flex align-items-start gap-2 mb-3">
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          aria-label="เดือนก่อนหน้า"
+          disabled={!canGo(-1)}
+          onClick={() => go(-1)}
+        >
+          ‹
+        </button>
+        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+          <Dropdown
+            id={`${id}-month`}
+            options={thaiMonths}
+            value={thaiMonths.map((_, index) => (index + 1 === view.month ? 1 : 0))}
+            clearable={false}
+            onChange={(next) => {
+              const index = next.indexOf(1)
+              if (index >= 0) setView((current) => ({ ...current, month: index + 1 }))
+            }}
+          />
         </div>
+        <div style={{ width: 110 }}>
+          <Dropdown
+            id={`${id}-year`}
+            options={years.map(String)}
+            value={years.map((year) => (year === view.year ? 1 : 0))}
+            clearable={false}
+            onChange={(next) => {
+              const index = next.indexOf(1)
+              if (index >= 0) setView((current) => ({ ...current, year: years[index] }))
+            }}
+          />
+        </div>
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          aria-label="เดือนถัดไป"
+          disabled={!canGo(1)}
+          onClick={() => go(1)}
+        >
+          ›
+        </button>
       </div>
-    </>,
-    document.body,
+
+      <div className="d-grid" style={{ gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+        {weekdayLabels.map((label) => (
+          <div key={label} className="text-center small fw-semibold text-body-secondary">{label}</div>
+        ))}
+        {Array.from({ length: blanks }, (_, i) => <div key={`blank-${i}`} />)}
+        {days.map((day) => {
+          const selected = isSame(selectedDate, day)
+          const style = selected ? 'btn-primary' : isSame(today, day) ? 'btn-outline-primary' : 'btn-light'
+          return (
+            <button
+              key={day}
+              type="button"
+              className={`btn btn-sm ${style}`}
+              aria-pressed={selected}
+              aria-label={`${day} ${thaiMonths[view.month - 1]} ${view.year}`}
+              onClick={() => pickDay(day)}
+            >
+              {day}
+            </button>
+          )
+        })}
+      </div>
+
+      {withTime && (
+        <div className="mt-3">
+          <TimePicker id={`${id}-time`} value={pendingTime} minuteStep={minuteStep} onChange={setPendingTime} />
+        </div>
+      )}
+    </PickerModal>
   )
 }

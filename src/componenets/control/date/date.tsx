@@ -1,13 +1,7 @@
-import { useRef, useState } from 'react'
-import type { KeyboardEvent } from 'react'
-import Control from '../Control'
-import { invalidProps } from '../../libs/validation'
-import Button from '../button/Button'
 import CalendarModal from './CalendarModal'
+import PickerField from './PickerField'
 import type { ComponentStyle } from '../../Component'
-import {
-  formatDateNumber, MAX_YEAR, MIN_YEAR, parseDateNumber, todayParts,
-} from '../../libs/dateValue'
+import { formatDateNumber, parseDateNumber, yearRange } from '../../libs/dateValue'
 
 interface DateProps {
   id: string
@@ -28,66 +22,33 @@ interface DateProps {
 export default function DateField({
   id, label, value, placeholder = 'วว/ดด/ปปปป', disabled, required, error, minYear, maxYear, style, onChange,
 }: DateProps) {
-  const [open, setOpen] = useState(false)
-  const boxRef = useRef<HTMLDivElement>(null)
   const parts = value === null ? null : parseDateNumber(value)
-
-  // The range always includes the current year and the selected year.
-  const currentYear = todayParts().year
-  const rangeMin = Math.max(MIN_YEAR, Math.min(minYear ?? currentYear - 100, parts?.year ?? Infinity))
-  const rangeMax = Math.min(MAX_YEAR, Math.max(maxYear ?? currentYear + 20, parts?.year ?? -Infinity))
-
-  const openPicker = () => {
-    if (!disabled) setOpen(true)
-  }
-  const closePicker = () => {
-    setOpen(false)
-    boxRef.current?.focus()
-  }
-
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Enter' || event.key === ' ' || event.key === 'ArrowDown') {
-      event.preventDefault()
-      openPicker()
-    }
-  }
+  const range = yearRange(parts?.year, minYear, maxYear)
 
   return (
-    <Control id={id} label={label} style={style} required={required} error={error}>
-      <div className="d-flex gap-2 align-items-start">
-        <div
-          id={id}
-          ref={boxRef}
-          role="combobox"
-          tabIndex={disabled ? -1 : 0}
-          className={`form-control flex-grow-1${disabled ? ' bg-body-secondary' : ''}${error ? ' is-invalid' : ''}`}
-          style={{ cursor: disabled ? 'not-allowed' : 'pointer', minHeight: 'calc(1.5em + 0.75rem + 2px)' }}
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          aria-readonly="true"
-          aria-disabled={disabled}
-          {...invalidProps(id, required, error)}
-          aria-labelledby={label ? `${id}-label` : undefined}
-          onClick={openPicker}
-          onKeyDown={onKeyDown}
-        >
-          {value === null ? <span className="text-body-secondary">{placeholder}</span> : formatDateNumber(value)}
-        </div>
-        <Button text="📅" variant="secondary" outline disabled={disabled} onClick={openPicker} />
-      </div>
-      {open && (
+    <PickerField
+      id={id}
+      label={label}
+      text={value === null ? null : formatDateNumber(value)}
+      placeholder={placeholder}
+      icon="📅"
+      disabled={disabled}
+      required={required}
+      error={error}
+      style={style}
+      renderPicker={(close) => (
         <CalendarModal
           id={id}
           value={parts}
-          minYear={rangeMin}
-          maxYear={rangeMax}
+          minYear={range.min}
+          maxYear={range.max}
           onSelect={(next) => {
             onChange(next)
-            closePicker()
+            close()
           }}
-          onClose={closePicker}
+          onClose={close}
         />
       )}
-    </Control>
+    />
   )
 }

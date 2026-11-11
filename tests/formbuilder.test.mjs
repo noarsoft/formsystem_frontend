@@ -183,7 +183,7 @@ test('custom controls render accordion, card and badge', () => {
 
 test('every documented control type renders its examples', () => {
   const types = new Set(docs.controlDocs.map((doc) => doc.type))
-  assert.equal(types.size, 15)
+  assert.equal(types.size, 17)
   for (const doc of docs.controlDocs) {
     assert.doesNotThrow(() => render(doc.examples, doc.data), doc.type)
   }
@@ -478,4 +478,94 @@ test('showErrors marks an off required switch and shows its message', () => {
   assert.match(html, /class="fs-switch is-invalid" aria-required="true" aria-invalid="true" aria-describedby="c-error"/)
   assert.match(html, /<div id="c-error" class="invalid-feedback d-block">กรุณาเปิดตัวเลือกนี้<\/div>/)
   assert.doesNotMatch(render([{ ...controls[0], value: 1 }], undefined, { showErrors: true }), /invalid/)
+})
+
+// ---- time / datetime ----
+
+test('time helpers use HHMM numbers', () => {
+  assert.deepEqual(dates.parseTimeNumber(1430), { hour: 14, minute: 30 })
+  assert.deepEqual(dates.parseTimeNumber(0), { hour: 0, minute: 0 })
+  assert.deepEqual(dates.parseTimeNumber(2359), { hour: 23, minute: 59 })
+  for (const bad of [2400, 1460, -1, 14.5, '1430', null, 99999]) {
+    assert.equal(dates.parseTimeNumber(bad), null, String(bad))
+  }
+  assert.equal(dates.formatTimeNumber(830), '08:30')
+  assert.equal(dates.formatTimeNumber(0), '00:00')
+  assert.equal(dates.toTimeNumber({ hour: 9, minute: 5 }), 905)
+  assert.throws(() => dates.formatTimeNumber(2460), /valid HHMM/)
+  assert.deepEqual(dates.nowTimeParts(new Date(2025, 10, 18, 7, 42)), { hour: 7, minute: 42 })
+})
+
+test('datetime helpers use Buddhist-era YYYYMMDDHHMM numbers', () => {
+  assert.deepEqual(dates.parseDateTimeNumber(256811181430), { year: 2568, month: 11, day: 18, hour: 14, minute: 30 })
+  assert.equal(dates.formatDateTimeNumber(256801050905), '05/01/2568 09:05')
+  assert.equal(dates.toDateTimeNumber({ year: 2568, month: 11, day: 18, hour: 0, minute: 0 }), 256811180000)
+  // Leap day 2543 BE (2000 CE) exists; 29/02/2568 does not; 25:00 is not a time; 8 digits is a date.
+  assert.ok(dates.parseDateTimeNumber(254302291200))
+  for (const bad of [256802291200, 256811182500, 256811181260, 25681118, 1430, 256811181430.5, '256811181430']) {
+    assert.equal(dates.parseDateTimeNumber(bad), null, String(bad))
+  }
+  assert.throws(() => dates.formatDateTimeNumber(256802291200), /valid YYYYMMDDHHMM/)
+})
+
+test('minute options follow minute_step and keep an off-step current minute', () => {
+  assert.equal(dates.minuteOptions(1).length, 60)
+  assert.deepEqual(dates.minuteOptions(15), [0, 15, 30, 45])
+  assert.deepEqual(dates.minuteOptions(15, 37), [0, 15, 30, 37, 45])
+  assert.deepEqual(dates.minuteOptions(25), [0, 25, 50])
+  for (const bad of [0, 61, 1.5]) assert.throws(() => dates.minuteOptions(bad), /minute_step/, String(bad))
+  assert.deepEqual(dates.roundTimeDown({ hour: 7, minute: 42 }, 15), { hour: 7, minute: 30 })
+})
+
+test('time and datetime values are validated and bound number fields update', () => {
+  assert.equal(values.getTimeValue({ type: 'time', value: 1430 }), 1430)
+  assert.equal(values.getTimeValue({ type: 'time', value: 0 }), 0)
+  assert.equal(values.getTimeValue({ type: 'time' }), null)
+  assert.throws(() => values.getTimeValue({ type: 'time', id: 't', value: 2400 }), /valid HHMM time/)
+  assert.equal(values.getTimeValue({ type: 'time', databinding: 't', value: 900 }, { t: { type: 'number', value: 1015 } }), 1015)
+  assert.throws(() => values.getTimeValue({ type: 'time', databinding: 'fname' }, data), /number field/)
+
+  assert.equal(values.getDateTimeValue({ type: 'datetime', value: 256811181430 }), 256811181430)
+  assert.equal(values.getDateTimeValue({ type: 'datetime' }), null)
+  assert.throws(() => values.getDateTimeValue({ type: 'datetime', id: 'x', value: 25681118 }), /valid YYYYMMDDHHMM/)
+  const at = { type: 'number', value: null }
+  assert.equal(values.getDateTimeValue({ type: 'datetime', databinding: 'at' }, { at }), null)
+  assert.throws(() => values.getDateTimeValue({ type: 'datetime', databinding: 'hobby' }, data), /number field/)
+  assert.deepEqual(values.updateData({ at }, 'at', 256811181430), { at: { type: 'number', value: 256811181430 } })
+  assert.equal(at.value, null)
+})
+
+test('time and datetime render formatted values in a box with a button', () => {
+  const html = render([
+    { type: 'time', id: 't1', label: 'เวลา', value: 830 },
+    { type: 'time', id: 't2' },
+    { type: 'datetime', id: 'dt1', label: 'นัด', value: 256811181430 },
+    { type: 'datetime', id: 'dt2' },
+  ])
+  assert.match(html, /id="t1"[^>]*role="combobox"[^>]*>08:30</)
+  assert.match(html, /id="t2"[^>]*role="combobox"[^>]*><span class="text-body-secondary">ชช:นน<\/span>/)
+  assert.match(html, /id="dt1"[^>]*role="combobox"[^>]*>18\/11\/2568 14:30</)
+  assert.match(html, /วว\/ดด\/ปปปป ชช:นน/)
+  assert.equal(html.match(/<button type="button" class="btn btn-outline-secondary">🕒<\/button>/g).length, 2)
+  assert.equal(html.match(/<button type="button" class="btn btn-outline-secondary">📅<\/button>/g).length, 2)
+  assert.doesNotMatch(html, /modal|type="time"|type="datetime/)
+  const bound = render([{ type: 'time', id: 'b', databinding: 's', value: 900 }], { s: { type: 'number', value: 1745 } })
+  assert.match(bound, />17:45</)
+})
+
+test('required time and datetime must have a value', () => {
+  const { REQUIRED_TIME_MESSAGE, REQUIRED_DATETIME_MESSAGE } = validation
+  assert.equal(validation.validateControl({ type: 'time', required: true }), REQUIRED_TIME_MESSAGE)
+  // 00:00 is a real time, not an empty value.
+  assert.equal(validation.validateControl({ type: 'time', required: true, value: 0 }), null)
+  assert.equal(validation.validateControl({ type: 'datetime', required: true, value: null }), REQUIRED_DATETIME_MESSAGE)
+  assert.equal(validation.validateControl({ type: 'datetime', required: true, value: 256811181430 }), null)
+  assert.equal(validation.validateControl({ type: 'datetime', required: true, required_message: 'ระบุเวลานัด' }), 'ระบุเวลานัด')
+  const html = render([
+    { type: 'time', id: 'tt', label: 'T', required: true },
+    { type: 'datetime', id: 'dd', label: 'D', required: true },
+  ], undefined, { showErrors: true })
+  assert.match(html, /id="tt"[^>]*class="form-control flex-grow-1 is-invalid"/)
+  assert.match(html, /<div id="tt-error" class="invalid-feedback d-block">กรุณาเลือกเวลา<\/div>/)
+  assert.match(html, /<div id="dd-error" class="invalid-feedback d-block">กรุณาเลือกวันและเวลา<\/div>/)
 })

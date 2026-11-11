@@ -18,7 +18,7 @@ interface BaseControl {
 
 // Validation for controls that take input. See libs/validation.ts.
 interface RequiredRule {
-  // true = the value must not be empty ('' / whitespace, null date, or no option selected);
+  // true = the value must not be empty ('' / whitespace, null date/time, or no option selected);
   // for a switch it must be on.
   required?: boolean
   // Shown under the control instead of the default message.
@@ -47,6 +47,31 @@ export type DateConfig = BaseControl & RequiredRule & {
   // Year range offered in the picker (Buddhist Era).
   min_year?: number
   max_year?: number
+}
+
+export type TimeConfig = BaseControl & RequiredRule & {
+  type: 'time'
+  label?: string
+  // HHMM (1430 = 14:30, 0 = 00:00); null or missing = empty.
+  value?: number | null
+  databinding?: string
+  placeholder?: string
+  disabled?: boolean
+  // Minutes offered in the picker: every N minutes (1-60, default 1).
+  minute_step?: number
+}
+
+export type DateTimeConfig = BaseControl & RequiredRule & {
+  type: 'datetime'
+  label?: string
+  // YYYYMMDDHHMM in Buddhist Era (256811181430 = 18/11/2568 14:30); null or missing = empty.
+  value?: number | null
+  databinding?: string
+  placeholder?: string
+  disabled?: boolean
+  min_year?: number
+  max_year?: number
+  minute_step?: number
 }
 
 export type TextareaConfig = BaseControl & RequiredRule & {
@@ -168,6 +193,8 @@ export type BadgeConfig = BaseControl & {
 export type ControlConfig =
   | TextboxConfig
   | DateConfig
+  | TimeConfig
+  | DateTimeConfig
   | TextareaConfig
   | SwitchConfig
   | LabelConfig

@@ -1,8 +1,8 @@
 import type {
-  AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DropdownConfig, FormData,
-  OptionConfig, SwitchConfig, TextareaConfig, TextboxConfig,
+  AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DateTimeConfig, DropdownConfig, FormData,
+  OptionConfig, SwitchConfig, TextareaConfig, TextboxConfig, TimeConfig,
 } from './controlTypes'
-import { parseDateNumber } from './dateValue'
+import { parseDateNumber, parseDateTimeNumber, parseTimeNumber } from './dateValue'
 
 export type ChoiceControl = DropdownConfig | CheckboxGroupConfig | OptionConfig
 
@@ -97,8 +97,13 @@ export function updateData(data: FormData | undefined, key: string, value: Field
   throw new Error(`Value does not match data binding "${key}"`)
 }
 
-// Returns the Buddhist-era YYYYMMDD number, or null when the date is empty.
-export function getDateValue(config: DateConfig, data?: FormData): number | null {
+// Reads a number-or-null value (date, time, datetime) and checks it with `parse`.
+function getNumberValue(
+  config: DateConfig | TimeConfig | DateTimeConfig,
+  data: FormData | undefined,
+  parse: (value: unknown) => unknown,
+  format: string,
+): number | null {
   let name = `Control "${controlName(config)}"`
   let value: unknown = config.value ?? null
   if (config.databinding !== undefined) {
@@ -109,10 +114,25 @@ export function getDateValue(config: DateConfig, data?: FormData): number | null
     name = `Data binding "${config.databinding}"`
     value = field.value ?? null
   }
-  if (value !== null && !parseDateNumber(value)) {
-    throw new Error(`${name} must be null or a valid YYYYMMDD Buddhist-era date`)
+  if (value !== null && !parse(value)) {
+    throw new Error(`${name} must be null or a valid ${format}`)
   }
   return value as number | null
+}
+
+// Returns the Buddhist-era YYYYMMDD number, or null when the date is empty.
+export function getDateValue(config: DateConfig, data?: FormData): number | null {
+  return getNumberValue(config, data, parseDateNumber, 'YYYYMMDD Buddhist-era date')
+}
+
+// Returns the HHMM number (1430 = 14:30), or null when the time is empty.
+export function getTimeValue(config: TimeConfig, data?: FormData): number | null {
+  return getNumberValue(config, data, parseTimeNumber, 'HHMM time')
+}
+
+// Returns the Buddhist-era YYYYMMDDHHMM number, or null when empty.
+export function getDateTimeValue(config: DateTimeConfig, data?: FormData): number | null {
+  return getNumberValue(config, data, parseDateTimeNumber, 'YYYYMMDDHHMM Buddhist-era date-time')
 }
 
 // 1 = on, 0 = off. A bound switch reads a number field; null there counts as off.

@@ -1,9 +1,13 @@
 import type { ControlConfig, FormData, FormDocument } from './controlTypes'
-import { getChoiceState, getDateValue, getSwitchValue, getTextValue } from './controlValues'
+import {
+  getChoiceState, getDateTimeValue, getDateValue, getSwitchValue, getTextValue, getTimeValue,
+} from './controlValues'
 import type { FieldValue } from './controlValues'
 
 export const REQUIRED_TEXT_MESSAGE = 'กรุณากรอกข้อมูล'
 export const REQUIRED_DATE_MESSAGE = 'กรุณาเลือกวันที่'
+export const REQUIRED_TIME_MESSAGE = 'กรุณาเลือกเวลา'
+export const REQUIRED_DATETIME_MESSAGE = 'กรุณาเลือกวันและเวลา'
 export const REQUIRED_CHOICE_MESSAGE = 'กรุณาเลือกอย่างน้อย 1 รายการ'
 export const REQUIRED_SWITCH_MESSAGE = 'กรุณาเปิดตัวเลือกนี้'
 
@@ -48,6 +52,10 @@ export function validateControl(config: ControlConfig, data?: FormData): string 
       return checkRequired(config, getTextValue(config, data), REQUIRED_TEXT_MESSAGE)
     case 'date':
       return checkRequired(config, getDateValue(config, data), REQUIRED_DATE_MESSAGE)
+    case 'time':
+      return checkRequired(config, getTimeValue(config, data), REQUIRED_TIME_MESSAGE)
+    case 'datetime':
+      return checkRequired(config, getDateTimeValue(config, data), REQUIRED_DATETIME_MESSAGE)
     case 'dropdown':
       return checkRequired(
         config, getChoiceState(config, config.multiple ?? false, data).value, REQUIRED_CHOICE_MESSAGE,

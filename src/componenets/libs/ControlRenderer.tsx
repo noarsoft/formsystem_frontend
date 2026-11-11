@@ -9,6 +9,8 @@ import Dropdown from '../control/dropdown/Dropdown'
 import Label from '../control/label/Label'
 import Option from '../control/option/Option'
 import DateField from '../control/date/date'
+import DateTimeField from '../control/datetime/DateTimeField'
+import TimeField from '../control/time/TimeField'
 import Textarea from '../control/textarea/Textarea'
 import Switch from '../control/switch/Switch'
 import Textbox from '../control/textbox/Textbox'
@@ -17,7 +19,7 @@ import Badge from '../custom/badge/Badge'
 import Card from '../custom/card/Card'
 import type { ButtonConfig, ControlConfig } from './controlTypes'
 import {
-  getChoiceState, getDateValue, getSwitchValue, getTextValue, replaceAt, toggleAccordionItem, toggleChoice,
+  getChoiceState, getDateTimeValue, getDateValue, getSwitchValue, getTextValue, getTimeValue, replaceAt, toggleAccordionItem, toggleChoice,
   updateData,
 } from './controlValues'
 import type { FieldValue } from './controlValues'
@@ -94,6 +96,40 @@ export default function ControlRenderer({ config, onChange, onAction }: ControlR
           disabled={config.disabled}
           minYear={config.min_year}
           maxYear={config.max_year}
+          onChange={commit}
+        />
+      )
+
+    case 'time':
+      return (
+        <TimeField
+          id={id}
+          label={config.label}
+          required={config.required}
+          error={error}
+          style={config.style}
+          value={getTimeValue(config, data)}
+          placeholder={config.placeholder}
+          disabled={config.disabled}
+          minuteStep={config.minute_step}
+          onChange={commit}
+        />
+      )
+
+    case 'datetime':
+      return (
+        <DateTimeField
+          id={id}
+          label={config.label}
+          required={config.required}
+          error={error}
+          style={config.style}
+          value={getDateTimeValue(config, data)}
+          placeholder={config.placeholder}
+          disabled={config.disabled}
+          minYear={config.min_year}
+          maxYear={config.max_year}
+          minuteStep={config.minute_step}
           onChange={commit}
         />
       )
