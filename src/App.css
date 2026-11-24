@@ -3,6 +3,13 @@ main {
   margin: 40px auto;
 }
 
+main:has(.form-builder-editor) {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  max-width: none;
+}
+
 pre {
   overflow: auto;
   padding: 16px;

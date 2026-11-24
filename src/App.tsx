@@ -6,6 +6,7 @@ import controlsJson from './assets/controls.json'
 import dataJson from './assets/data.json'
 import ControlDocument from './form/document'
 import DemoEditor from './demo/DemoEditor'
+import FormBuilderEditor from './builder/FormBuilderEditor'
 import Switch from './componenets/control/switch/Switch'
 import './App.css'
 
@@ -15,7 +16,7 @@ const initialData = dataJson as FormData
 function App() {
   const [form, setForm] = useState(initialForm)
   const [data, setData] = useState(initialData)
-  const [page, setPage] = useState<'demo' | 'document'>('demo')
+  const [page, setPage] = useState<'demo' | 'builder' | 'document'>('demo')
   // Set by the submit button: from then on every validation error is shown.
   const [submitted, setSubmitted] = useState(false)
   // View the whole form read-only (like staff reviewing a submitted form).
@@ -28,6 +29,11 @@ function App() {
         <li className="nav-item">
           <button type="button" className={`nav-link${page === 'demo' ? ' active' : ''}`} onClick={() => setPage('demo')}>
             Demo
+          </button>
+        </li>
+        <li className="nav-item">
+          <button type="button" className={`nav-link${page === 'builder' ? ' active' : ''}`} onClick={() => setPage('builder')}>
+            Form Builder
           </button>
         </li>
         <li className="nav-item">
@@ -78,6 +84,12 @@ function App() {
             <pre aria-label="form">{JSON.stringify(form, null, 2)}</pre>
           </details>
         </>
+      ) : page === 'builder' ? (
+        <FormBuilderEditor
+          onSave={(savedForm, savedData) => {
+            console.log('Form saved:', savedForm, savedData)
+          }}
+        />
       ) : (
         <ControlDocument />
       )}
