@@ -1,11 +1,285 @@
+/*
+  Theme: Citrus Burst (minimal). Colours only: no size, spacing or layout changes.
+  Neutrals carry the page; Tangerine is the single accent (buttons, checks, focus).
+  Tangerine (#FF8C00) is too light for text on white (2.3:1), so accent *text* uses
+  the darker shade #A65200 (5.5:1). Text on Tangerine fills is Charcoal Ink (5.4:1).
+*/
 :root {
+  /* Palette */
+  --cb-tangerine: #ff8c00;
+  --cb-tangerine-hover: #f28500;
+  --cb-tangerine-active: #e67e00;
+  --cb-accent-text: #a65200;
+  --cb-sunflower: #ffc300;
+  --cb-base-white: #ffffff;
+  --cb-soft-tint: #fff7ed;
+  --cb-soft-tint-strong: #ffebd1;
+  --cb-line-gray: #e3e0dc;
+  --cb-muted-text: #6f6760;
+  --cb-charcoal-ink: #432f15;
+  --cb-success: #2e9e5b;
+  --cb-success-text: #27854c;
+  --cb-warning: #e08a00;
+  --cb-warning-text: #a66600;
+  --cb-error: #d93025;
+  --cb-info: #2f7dd1;
+  --cb-info-text: #2c76c4;
+
   font-family: system-ui, 'Segoe UI', sans-serif;
-  color: #202734;
-  background: #fff;
+  color: var(--cb-charcoal-ink);
+  background: var(--cb-base-white);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+
+  /* Bootstrap: body, borders, links, focus */
+  --bs-body-color: var(--cb-charcoal-ink);
+  --bs-body-color-rgb: 67, 47, 21;
+  --bs-body-bg: var(--cb-base-white);
+  --bs-body-bg-rgb: 255, 255, 255;
+  --bs-emphasis-color: var(--cb-charcoal-ink);
+  --bs-emphasis-color-rgb: 67, 47, 21;
+  --bs-secondary-color: var(--cb-muted-text);
+  --bs-secondary-color-rgb: 111, 103, 96;
+  --bs-secondary-bg: #f5f3f0;
+  --bs-tertiary-color: var(--cb-muted-text);
+  --bs-tertiary-bg: var(--cb-soft-tint);
+  --bs-heading-color: var(--cb-charcoal-ink);
+  --bs-border-color: var(--cb-line-gray);
+  --bs-border-color-translucent: rgba(67, 47, 21, 0.12);
+  --bs-link-color: var(--cb-accent-text);
+  --bs-link-color-rgb: 166, 82, 0;
+  --bs-link-hover-color: var(--cb-charcoal-ink);
+  --bs-link-hover-color-rgb: 67, 47, 21;
+  --bs-code-color: var(--cb-accent-text);
+  --bs-focus-ring-color: rgba(255, 140, 0, 0.25);
+
+  /* Bootstrap: theme colours (used by badges, text-*, bg-*, borders, alerts) */
+  --bs-primary: var(--cb-tangerine);
+  --bs-primary-rgb: 255, 140, 0;
+  --bs-primary-text-emphasis: var(--cb-accent-text);
+  --bs-primary-bg-subtle: var(--cb-soft-tint);
+  --bs-primary-border-subtle: #ffd9a8;
+  --bs-secondary: var(--cb-muted-text);
+  --bs-secondary-rgb: 111, 103, 96;
+  --bs-secondary-text-emphasis: var(--cb-charcoal-ink);
+  --bs-secondary-bg-subtle: #f5f3f0;
+  --bs-secondary-border-subtle: var(--cb-line-gray);
+  --bs-success: var(--cb-success);
+  --bs-success-rgb: 46, 158, 91;
+  --bs-success-text-emphasis: #1f6b3d;
+  --bs-success-bg-subtle: #eaf6ef;
+  --bs-success-border-subtle: #bfe3cd;
+  --bs-warning: var(--cb-warning);
+  --bs-warning-rgb: 224, 138, 0;
+  --bs-warning-text-emphasis: #8a5500;
+  --bs-warning-bg-subtle: #fff4e0;
+  --bs-warning-border-subtle: #f5d29a;
+  --bs-danger: var(--cb-error);
+  --bs-danger-rgb: 217, 48, 37;
+  --bs-danger-text-emphasis: #b3261e;
+  --bs-danger-bg-subtle: #fcebea;
+  --bs-danger-border-subtle: #f3c1bd;
+  --bs-info: var(--cb-info);
+  --bs-info-rgb: 47, 125, 209;
+  --bs-info-text-emphasis: #1f5a99;
+  --bs-info-bg-subtle: #eaf2fb;
+  --bs-info-border-subtle: #bbd3ef;
+  --bs-light: var(--cb-soft-tint);
+  --bs-light-rgb: 255, 247, 237;
+  --bs-dark: var(--cb-charcoal-ink);
+  --bs-dark-rgb: 67, 47, 21;
+
+  /* Validation */
+  --bs-form-invalid-color: var(--cb-error);
+  --bs-form-invalid-border-color: var(--cb-error);
 }
 
 body {
   margin: 0;
+}
+
+/* Inputs: Tangerine focus ring */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--cb-tangerine);
+  box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+}
+
+/* Buttons (Bootstrap sets these per variant, so each is overridden) */
+.btn-primary {
+  --bs-btn-color: var(--cb-charcoal-ink);
+  --bs-btn-bg: var(--cb-tangerine);
+  --bs-btn-border-color: var(--cb-tangerine);
+  --bs-btn-hover-color: var(--cb-charcoal-ink);
+  --bs-btn-hover-bg: var(--cb-tangerine-hover);
+  --bs-btn-hover-border-color: var(--cb-tangerine-hover);
+  --bs-btn-active-color: var(--cb-charcoal-ink);
+  --bs-btn-active-bg: var(--cb-tangerine-active);
+  --bs-btn-active-border-color: var(--cb-tangerine-active);
+  --bs-btn-disabled-color: var(--cb-charcoal-ink);
+  --bs-btn-disabled-bg: var(--cb-tangerine);
+  --bs-btn-disabled-border-color: var(--cb-tangerine);
+  --bs-btn-focus-shadow-rgb: 255, 140, 0;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--cb-charcoal-ink);
+  --bs-btn-border-color: var(--cb-tangerine);
+  --bs-btn-hover-color: var(--cb-charcoal-ink);
+  --bs-btn-hover-bg: var(--cb-tangerine);
+  --bs-btn-hover-border-color: var(--cb-tangerine);
+  --bs-btn-active-color: var(--cb-charcoal-ink);
+  --bs-btn-active-bg: var(--cb-tangerine-active);
+  --bs-btn-active-border-color: var(--cb-tangerine-active);
+  --bs-btn-disabled-color: var(--cb-muted-text);
+  --bs-btn-disabled-border-color: var(--cb-line-gray);
+  --bs-btn-focus-shadow-rgb: 255, 140, 0;
+}
+
+.btn-secondary {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--cb-muted-text);
+  --bs-btn-border-color: var(--cb-muted-text);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #5e5751;
+  --bs-btn-hover-border-color: #5e5751;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--cb-charcoal-ink);
+  --bs-btn-active-border-color: var(--cb-charcoal-ink);
+  --bs-btn-disabled-bg: var(--cb-muted-text);
+  --bs-btn-disabled-border-color: var(--cb-muted-text);
+  --bs-btn-focus-shadow-rgb: 111, 103, 96;
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--cb-muted-text);
+  --bs-btn-border-color: var(--cb-line-gray);
+  --bs-btn-hover-color: var(--cb-charcoal-ink);
+  --bs-btn-hover-bg: var(--cb-soft-tint);
+  --bs-btn-hover-border-color: var(--cb-line-gray);
+  --bs-btn-active-color: var(--cb-charcoal-ink);
+  --bs-btn-active-bg: var(--cb-soft-tint-strong);
+  --bs-btn-active-border-color: var(--cb-line-gray);
+  --bs-btn-disabled-color: var(--cb-muted-text);
+  --bs-btn-disabled-border-color: var(--cb-line-gray);
+  --bs-btn-focus-shadow-rgb: 255, 140, 0;
+}
+
+.btn-light {
+  --bs-btn-color: var(--cb-charcoal-ink);
+  --bs-btn-bg: var(--cb-soft-tint);
+  --bs-btn-border-color: var(--cb-soft-tint);
+  --bs-btn-hover-color: var(--cb-charcoal-ink);
+  --bs-btn-hover-bg: var(--cb-soft-tint-strong);
+  --bs-btn-hover-border-color: var(--cb-soft-tint-strong);
+  --bs-btn-active-color: var(--cb-charcoal-ink);
+  --bs-btn-active-bg: var(--cb-soft-tint-strong);
+  --bs-btn-active-border-color: var(--cb-soft-tint-strong);
+  --bs-btn-focus-shadow-rgb: 255, 140, 0;
+}
+
+.btn-dark {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--cb-charcoal-ink);
+  --bs-btn-border-color: var(--cb-charcoal-ink);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #5a4122;
+  --bs-btn-hover-border-color: #5a4122;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #2e200e;
+  --bs-btn-active-border-color: #2e200e;
+}
+
+.btn-outline-dark {
+  --bs-btn-color: var(--cb-charcoal-ink);
+  --bs-btn-border-color: var(--cb-charcoal-ink);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--cb-charcoal-ink);
+  --bs-btn-hover-border-color: var(--cb-charcoal-ink);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--cb-charcoal-ink);
+  --bs-btn-active-border-color: var(--cb-charcoal-ink);
+}
+
+/* Semantic buttons use the darker shades where white text needs 4.5:1. */
+.btn-success {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--cb-success-text);
+  --bs-btn-border-color: var(--cb-success-text);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #1f6b3d;
+  --bs-btn-hover-border-color: #1f6b3d;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #1f6b3d;
+  --bs-btn-active-border-color: #1f6b3d;
+  --bs-btn-disabled-bg: var(--cb-success-text);
+  --bs-btn-disabled-border-color: var(--cb-success-text);
+  --bs-btn-focus-shadow-rgb: 46, 158, 91;
+}
+
+.btn-danger {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--cb-error);
+  --bs-btn-border-color: var(--cb-error);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #b3261e;
+  --bs-btn-hover-border-color: #b3261e;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #b3261e;
+  --bs-btn-active-border-color: #b3261e;
+  --bs-btn-disabled-bg: var(--cb-error);
+  --bs-btn-disabled-border-color: var(--cb-error);
+  --bs-btn-focus-shadow-rgb: 217, 48, 37;
+}
+
+.btn-warning {
+  --bs-btn-color: var(--cb-charcoal-ink);
+  --bs-btn-bg: var(--cb-warning);
+  --bs-btn-border-color: var(--cb-warning);
+  --bs-btn-hover-color: var(--cb-charcoal-ink);
+  --bs-btn-hover-bg: #eb9200;
+  --bs-btn-hover-border-color: #eb9200;
+  --bs-btn-active-color: var(--cb-charcoal-ink);
+  --bs-btn-active-bg: #eb9200;
+  --bs-btn-active-border-color: #eb9200;
+  --bs-btn-focus-shadow-rgb: 224, 138, 0;
+}
+
+.btn-info {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--cb-info-text);
+  --bs-btn-border-color: var(--cb-info-text);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #1f5a99;
+  --bs-btn-hover-border-color: #1f5a99;
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: #1f5a99;
+  --bs-btn-active-border-color: #1f5a99;
+  --bs-btn-focus-shadow-rgb: 47, 125, 209;
+}
+
+/* Badges: Bootstrap forces white/black text; match the spec's contrast pairs. */
+.text-bg-primary { color: var(--cb-charcoal-ink) !important; }
+.text-bg-warning { color: var(--cb-charcoal-ink) !important; }
+.text-bg-light { color: var(--cb-charcoal-ink) !important; }
+.text-bg-success { color: #fff !important; background-color: var(--cb-success-text) !important; }
+.text-bg-info { color: #fff !important; background-color: var(--cb-info-text) !important; }
+.text-bg-secondary,
+.text-bg-danger,
+.text-bg-dark { color: #fff !important; }
+
+/* Tabs: quiet neutrals; the active tab is Charcoal Ink. */
+.nav-tabs {
+  --bs-nav-link-color: var(--cb-muted-text);
+  --bs-nav-link-hover-color: var(--cb-charcoal-ink);
+  --bs-nav-tabs-link-active-color: var(--cb-charcoal-ink);
+  --bs-nav-tabs-link-hover-border-color: var(--cb-line-gray) var(--cb-line-gray) var(--cb-line-gray);
+}
+
+/* Accordion: Soft Tint when open, Tangerine focus ring, Charcoal chevron. */
+.accordion {
+  --bs-accordion-active-color: var(--cb-charcoal-ink);
+  --bs-accordion-active-bg: var(--cb-soft-tint);
+  --bs-accordion-btn-focus-box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+  --bs-accordion-btn-active-icon: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23432F15' stroke-linecap='round' stroke-linejoin='round'%3e%3cpath d='M2 5L8 11L14 5'/%3e%3c/svg%3e");
 }

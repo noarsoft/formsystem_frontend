@@ -1,8 +1,8 @@
 import type {
-  AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DropdownConfig, FormData,
-  OptionConfig, PasswordConfig, TextareaConfig, TextboxConfig,
+  AccordionConfig, CheckboxGroupConfig, ControlConfig, DateConfig, DateRangeConfig, DateTimeConfig, MatrixConfig, NumberConfig, RatingConfig, DropdownConfig, FormData,
+  OptionConfig, SwitchConfig, TextareaConfig, TextboxConfig, TimeConfig,
 } from './controlTypes'
-import { parseDateNumber } from './dateValue'
+import { parseDateNumber, parseDateTimeNumber, parseTimeNumber } from './dateValue'
 
 export type ChoiceControl = DropdownConfig | CheckboxGroupConfig | OptionConfig
 
@@ -24,7 +24,7 @@ function getField(config: ControlConfig, key: string, data?: FormData) {
 
 // A bound control always reads its value from the data; inline `value` is ignored.
 export function getTextValue(
-  config: TextboxConfig | PasswordConfig | TextareaConfig,
+  config: TextboxConfig | TextareaConfig,
   data?: FormData,
 ): string {
   if (config.databinding !== undefined) {
@@ -53,6 +53,32 @@ function validateChoice(name: string, options: unknown, value: unknown, multiple
       (multiple ? '' : ' with at most one selection'),
     )
   }
+}
+
+export interface OtherState {
+  // Index of the "อื่น ๆ" option, and whether it is selected.
+  index: number
+  selected: boolean
+  text: string
+}
+
+// The "อื่น ๆ (โปรดระบุ)" part of a choice control, or null when it has none.
+export function getOtherState(config: ChoiceControl, options: string[], value: number[], data?: FormData): OtherState | null {
+  const other = config.other
+  if (other === undefined) return null
+  const option = other.option ?? options[options.length - 1]
+  const index = options.indexOf(option)
+  if (index < 0) {
+    throw new Error(`Control "${controlName(config)}" other option "${option}" is not one of its options`)
+  }
+  let text = other.value ?? ''
+  if (other.databinding !== undefined) {
+    const field = getField(config, other.databinding, data)
+    if (field.type !== 'string') throw new Error(`Data binding "${other.databinding}" must be a string field`)
+    text = field.value
+  }
+  if (typeof text !== 'string') throw new Error(`Control "${controlName(config)}" other value must be text`)
+  return { index, selected: value[index] === 1, text }
 }
 
 export interface ChoiceState {
@@ -97,8 +123,13 @@ export function updateData(data: FormData | undefined, key: string, value: Field
   throw new Error(`Value does not match data binding "${key}"`)
 }
 
-// Returns the Buddhist-era YYYYMMDD number, or null when the date is empty.
-export function getDateValue(config: DateConfig, data?: FormData): number | null {
+// Reads a number-or-null value (date, time, datetime) and checks it with `parse`.
+function getNumberValue(
+  config: DateConfig | TimeConfig | DateTimeConfig | NumberConfig | RatingConfig,
+  data: FormData | undefined,
+  parse: (value: unknown) => unknown,
+  format: string,
+): number | null {
   let name = `Control "${controlName(config)}"`
   let value: unknown = config.value ?? null
   if (config.databinding !== undefined) {
@@ -109,10 +140,129 @@ export function getDateValue(config: DateConfig, data?: FormData): number | null
     name = `Data binding "${config.databinding}"`
     value = field.value ?? null
   }
-  if (value !== null && !parseDateNumber(value)) {
-    throw new Error(`${name} must be null or a valid YYYYMMDD Buddhist-era date`)
+  if (value !== null && !parse(value)) {
+    throw new Error(`${name} must be null or a valid ${format}`)
   }
   return value as number | null
+}
+
+// Returns the Buddhist-era YYYYMMDD number, or null when the date is empty.
+export function getDateValue(config: DateConfig, data?: FormData): number | null {
+  return getNumberValue(config, data, parseDateNumber, 'YYYYMMDD Buddhist-era date')
+}
+
+export interface DateRange {
+  from: number | null
+  to: number | null
+}
+
+// Which data keys a date_range writes to, or null when it keeps its values inline.
+export function dateRangeBindings(config: DateRangeConfig): { from: string, to: string } | null {
+  const { databinding_from: from, databinding_to: to } = config
+  if (from === undefined && to === undefined) return null
+  if (from === undefined || to === undefined) {
+    throw new Error(`Control "${controlName(config)}" must set both databinding_from and databinding_to, or neither`)
+  }
+  return { from, to }
+}
+
+// Both ends of a date_range (YYYYMMDD Buddhist-era numbers or null). Order is checked by validation.
+export function getDateRangeValue(config: DateRangeConfig, data?: FormData): DateRange {
+  const bindings = dateRangeBindings(config)
+  const end = (value: number | null | undefined, databinding: string | undefined) =>
+    getDateValue({ type: 'date', id: config.id, value, databinding }, data)
+  return {
+    from: end(config.value_from, bindings?.from),
+    to: end(config.value_to, bindings?.to),
+  }
+}
+
+// Returns the number, or null when empty. Anything but a finite number (e.g. "12") throws.
+export function getNumberFieldValue(config: NumberConfig, data?: FormData): number | null {
+  return getNumberValue(config, data, (value) => typeof value === 'number' && Number.isFinite(value), 'number')
+}
+
+// Score range of a rating (default 1-5). Wrong settings throw.
+export function ratingRange(config: RatingConfig): { min: number, max: number } {
+  const min = config.min ?? 1
+  const max = config.max ?? 5
+  const name = controlName(config)
+  if (!Number.isInteger(min) || !Number.isInteger(max) || min < 0 || min >= max || max - min > 20) {
+    throw new Error(`Control "${name}" rating needs whole numbers 0 <= min < max with at most 21 steps (got ${min}-${max})`)
+  }
+  if (config.display !== undefined && config.display !== 'star' && config.display !== 'number') {
+    throw new Error(`Control "${name}" display must be "star" or "number"`)
+  }
+  return { min, max }
+}
+
+// The score, or null when not rated. A score outside min-max (or not a whole number) throws.
+export function getRatingValue(config: RatingConfig, data?: FormData): number | null {
+  const { min, max } = ratingRange(config)
+  return getNumberValue(
+    config, data,
+    (value) => typeof value === 'number' && Number.isInteger(value) && value >= min && value <= max,
+    `whole number from ${min} to ${max}`,
+  )
+}
+
+// The 0/1 answer of every matrix row, read from its data key or its inline value.
+// Columns must be a non-empty list of text; bound rows need a number array field whose
+// options (if given) are exactly the columns.
+export function getMatrixValues(config: MatrixConfig, data?: FormData): number[][] {
+  const name = controlName(config)
+  const { columns, rows } = config
+  if (!Array.isArray(columns) || columns.length === 0 || !columns.every((c) => typeof c === 'string')) {
+    throw new Error(`Control "${name}" columns must be a non-empty list of text`)
+  }
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error(`Control "${name}" rows must be a non-empty list`)
+  }
+  const multiple = config.multiple ?? false
+  return rows.map((row, index) => {
+    if (row.databinding === undefined) {
+      const value = row.value ?? columns.map(() => 0)
+      validateChoice(`Control "${name}" row ${index + 1}`, columns, value, multiple)
+      return value
+    }
+    const field = getField(config, row.databinding, data)
+    if (field.type !== 'number' || field.is_array !== 1) {
+      throw new Error(`Data binding "${row.databinding}" must be a number array field`)
+    }
+    if (field.options !== undefined && (field.options.length !== columns.length || field.options.some((o, i) => o !== columns[i]))) {
+      throw new Error(`Data binding "${row.databinding}" options must match the matrix columns`)
+    }
+    validateChoice(`Data binding "${row.databinding}"`, columns, field.value, multiple)
+    return field.value
+  })
+}
+
+// Returns the HHMM number (1430 = 14:30), or null when the time is empty.
+export function getTimeValue(config: TimeConfig, data?: FormData): number | null {
+  return getNumberValue(config, data, parseTimeNumber, 'HHMM time')
+}
+
+// Returns the Buddhist-era YYYYMMDDHHMM number, or null when empty.
+export function getDateTimeValue(config: DateTimeConfig, data?: FormData): number | null {
+  return getNumberValue(config, data, parseDateTimeNumber, 'YYYYMMDDHHMM Buddhist-era date-time')
+}
+
+// 1 = on, 0 = off. A bound switch reads a number field; null there counts as off.
+export function getSwitchValue(config: SwitchConfig, data?: FormData): 0 | 1 {
+  let name = `Control "${controlName(config)}"`
+  let value: unknown = config.value ?? 0
+  if (config.databinding !== undefined) {
+    const field = getField(config, config.databinding, data)
+    if (field.type !== 'number' || field.is_array === 1) {
+      throw new Error(`Data binding "${config.databinding}" must be a number field`)
+    }
+    name = `Data binding "${config.databinding}"`
+    value = field.value ?? 0
+  }
+  if (value !== 0 && value !== 1) {
+    throw new Error(`${name} must be 0 (off) or 1 (on)`)
+  }
+  return value
 }
 
 export function toggleChoice(value: number[], index: number, multiple: boolean): number[] {

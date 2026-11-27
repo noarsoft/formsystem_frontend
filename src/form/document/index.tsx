@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import FormBuilder from '../../componenets/libs/Formbuilder'
 import type { FormData, FormDocument } from '../../componenets/libs/controlTypes'
-import { commonProps, controlDocs } from './docs'
+import { validateForm } from '../../componenets/libs/validation'
+import { commonProps, controlDocs, visibleIfExample } from './docs'
 import type { ControlDoc, PropDoc } from './docs'
 
 function PropTable({ props }: { props: PropDoc[] }) {
@@ -29,6 +30,8 @@ function PropTable({ props }: { props: PropDoc[] }) {
 function ControlSection({ doc }: { doc: ControlDoc }) {
   const [form, setForm] = useState<FormDocument>({ controls: doc.examples })
   const [data, setData] = useState<FormData | undefined>(doc.data)
+  // Shows what a button / steps submit sends to FormBuilder's onAction.
+  const [action, setAction] = useState<string | null>(null)
 
   return (
     <section id={`doc-${doc.type}`} className="mb-5">
@@ -41,7 +44,14 @@ function ControlSection({ doc }: { doc: ControlDoc }) {
         <div className="col-lg-6">
           <h4 className="h6">ตัวอย่างที่ใช้งานได้จริง</h4>
           <div className="border rounded p-3">
-            <FormBuilder form={form} onChange={setForm} data={data} onDataChange={setData} />
+            <FormBuilder
+              form={form}
+              onChange={setForm}
+              data={data}
+              onDataChange={setData}
+              onAction={(button) => setAction(`onAction: ${button.id ?? button.text}`)}
+            />
+            {action && <div role="status" className="small text-body-secondary mt-3">{action}</div>}
           </div>
         </div>
         <div className="col-lg-6">
@@ -50,6 +60,48 @@ function ControlSection({ doc }: { doc: ControlDoc }) {
             {JSON.stringify(form, null, 2)}
             {data && `\n\n// data\n${JSON.stringify(data, null, 2)}`}
           </pre>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function VisibleIfSection() {
+  const [form, setForm] = useState<FormDocument>(visibleIfExample.form)
+  const [data, setData] = useState<FormData>(visibleIfExample.data)
+  const errors = validateForm(form, data)
+
+  return (
+    <section id="doc-visible_if" className="mb-5">
+      <h3 className="h4 mt-4">แสดง/ซ่อนตามเงื่อนไข (<code>visible_if</code>)</h3>
+      <p>
+        ใส่ <code>visible_if</code> ใน control ใดก็ได้ (รวมถึงกล่อง/การ์ด ซึ่งจะซ่อนทุกอย่างข้างใน) ให้แสดงเฉพาะเมื่อคำตอบใน
+        data ตรงเงื่อนไข <code>field</code> คือ key ใน data ส่วนช่องตัวเลือกเทียบกับชื่อตัวเลือก
+      </p>
+      <ul>
+        <li><code>{'{ "field": "gender", "equals": "อื่น ๆ" }'}</code> ตอบ "อื่น ๆ" → แสดง</li>
+        <li><code>{'{ "field": "disease", "not_equals": "ไม่มี" }'}</code> ตอบแล้วและไม่ใช่ "ไม่มี" → แสดง (ยังไม่ตอบ = ซ่อน)</li>
+        <li><code>{'{ "field": "education", "in": ["ปริญญาโท", "ปริญญาเอก"] }'}</code> ตอบข้อใดข้อหนึ่ง → แสดง</li>
+        <li><code>{'{ "field": "phone", "filled": true }'}</code> กรอกแล้ว → แสดง (<code>false</code> = ยังว่าง → แสดง)</li>
+        <li><code>{'[ {...}, {...} ]'}</code> ทุกข้อต้องจริง</li>
+      </ul>
+      <p>
+        ช่องที่ถูกซ่อนไม่ถูกตรวจ required/รูปแบบ และค่าใน data ยังอยู่ (เปลี่ยนใจกลับมาค่าเดิมยังอยู่)
+        อ้าง key ที่ไม่มีใน data หรือใส่เงื่อนไขไม่ครบ/เกิน 1 แบบจะ throw error
+      </p>
+      <div className="row g-3">
+        <div className="col-lg-6">
+          <h4 className="h6">ตัวอย่างที่ใช้งานได้จริง</h4>
+          <div className="border rounded p-3">
+            <FormBuilder form={form} onChange={setForm} data={data} onDataChange={setData} />
+            <div className="small text-body-secondary mt-3" role="status">
+              validateForm: {errors.length === 0 ? 'ผ่าน' : errors.map((e) => `${e.id}: ${e.message}`).join(', ')}
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-6">
+          <h4 className="h6">data (อัปเดตตามการแก้ไข)</h4>
+          <pre className="rounded mb-0" style={{ maxHeight: 420 }}>{JSON.stringify(data, null, 2)}</pre>
         </div>
       </div>
     </section>
@@ -77,8 +129,35 @@ export default function ControlDocument() {
         ช่องข้อความใช้ <code>{'{ "type": "string", "value": "..." }'}</code> ส่วนตัวเลือกใช้{' '}
         <code>{'{ "type": "number", "is_array": 1, "options": [...], "value": [0, 1] }'}</code>{' '}
         (<code>options</code> ใน data ชนะ <code>options</code> ใน schema) ส่วนวันที่ใช้{' '}
-        <code>{'{ "type": "number", "value": 25681118 }'}</code>
+        <code>{'{ "type": "number", "value": 25681118 }'}</code> เวลาใช้ <code>1430</code>{' '}
+        และวันเวลาใช้ <code>256811181430</code>
       </p>
+
+      <h3 className="h4 mt-4">Validation (required)</h3>
+      <p>
+        ช่องกรอกและช่องตัวเลือก (textbox, number, date, date_range, time, datetime, textarea, dropdown, checkbox_group, option, matrix, switch, rating) ตั้ง{' '}
+        <code>{'"required": true'}</code> ได้ จะมี <span className="text-danger">*</span> หลัง label
+        และถ้าค่าว่าง (สำหรับ switch คือยังปิดอยู่) จะแสดงข้อความสีแดงใต้ช่อง (เปลี่ยนข้อความด้วย <code>required_message</code>)
+        ข้อความจะขึ้นหลังผู้ใช้แก้ช่องนั้น หรือขึ้นทุกช่องพร้อมกันเมื่อส่ง{' '}
+        <code>{'<FormBuilder showErrors />'}</code> (เช่น หลังกดปุ่มส่ง) ตรวจทั้งฟอร์มด้วย{' '}
+        <code>validateForm(form, data)</code> จาก <code>libs/validation.ts</code> ซึ่งคืนรายการ{' '}
+        <code>{'{ id, message }'}</code> (อาร์เรย์ว่าง = ผ่าน)
+      </p>
+      <p>
+        textbox และ textarea ตรวจเพิ่มได้ด้วย <code>min_length</code> / <code>max_length</code>,{' '}
+        <code>format</code> (email, phone_th, thai_id, postcode_th, digits) และ <code>pattern</code> (regex)
+        ตรวจตามลำดับ ห้ามว่าง → ความยาว → รูปแบบ แล้วแสดงข้อความแรกที่ไม่ผ่าน ค่าว่างที่ไม่ required ถือว่าผ่าน
+      </p>
+
+      <h3 className="h4 mt-4">disabled กับ readonly</h3>
+      <p>
+        ทั้งสองแก้ค่าไม่ได้ และ<strong>ไม่ถูกตรวจ</strong> (required/รูปแบบ) เพราะผู้ใช้แก้ไม่ได้อยู่แล้ว ต่างกันที่
+        <code>disabled</code> = สีจาง กด/โฟกัสไม่ได้ ("ตอนนี้ใช้ไม่ได้") ส่วน <code>readonly</code> = หน้าตาปกติ
+        โฟกัส/คัดลอกได้ ("ดูได้แต่แก้ไม่ได้") ช่องวันที่/เวลาแบบ readonly จะซ่อนปุ่ม 📅 ใส่ทีละช่องได้ หรือทั้งฟอร์มด้วย{' '}
+        <code>{'<FormBuilder readonly />'}</code> (เช่น หน้าเจ้าหน้าที่ดูใบสมัคร) ซึ่งจะไม่แสดงข้อความเตือนด้วย
+      </p>
+
+      <VisibleIfSection />
 
       <h3 className="h4 mt-4">Properties ที่ทุก control ใช้ร่วมกัน</h3>
       <PropTable props={commonProps} />

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import Control from '../Control'
+import OtherInput from '../OtherInput'
+import type { OtherInputProps } from '../OtherInput'
+import { invalidProps } from '../../libs/validation'
 import type { ComponentStyle } from '../../Component'
 import '../controls.css'
 
@@ -12,6 +15,14 @@ interface DropdownProps {
   multiple?: boolean
   // Single mode only: show the "-- เลือก --" entry that clears the selection.
   clearable?: boolean
+  // "อื่น ๆ (โปรดระบุ)": a text box under the list while that option is selected.
+  other?: OtherInputProps
+  // Greyed out, not focusable, does not open.
+  disabled?: boolean
+  // Focusable, does not open (view only).
+  readOnly?: boolean
+  required?: boolean
+  error?: string
   style?: ComponentStyle
   onChange: (value: number[]) => void
 }
@@ -26,7 +37,7 @@ const placeholder = '-- เลือก --'
 
 // A div-based combobox/listbox so the whole design can be styled freely.
 export default function Dropdown({
-  id, label, options, value, multiple = false, clearable = true, style, onChange,
+  id, label, options, value, multiple = false, clearable = true, disabled, readOnly, required, error, other, style, onChange,
 }: DropdownProps) {
   const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
@@ -57,7 +68,9 @@ export default function Dropdown({
     }
   }, [open, active, id])
 
+  const locked = disabled || readOnly
   const openMenu = () => {
+    if (locked) return
     scrollToActive.current = true
     setActive(Math.max(entries.findIndex(isSelected), 0))
     setOpen(true)
@@ -73,6 +86,7 @@ export default function Dropdown({
   }
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (locked) return
     switch (event.key) {
       case 'ArrowDown':
       case 'ArrowUp': {
@@ -101,18 +115,21 @@ export default function Dropdown({
   }
 
   return (
-    <Control id={id} label={label} style={style}>
+    <Control id={id} label={label} style={style} required={required} error={error}>
       <div className="fs-dropdown" ref={rootRef}>
         <div
           id={id}
           role="combobox"
-          tabIndex={0}
-          className="form-select fs-dropdown-toggle"
+          tabIndex={disabled ? -1 : 0}
+          className={`form-select fs-dropdown-toggle${disabled ? ' is-disabled' : ''}${readOnly ? ' is-readonly' : ''}${error ? ' is-invalid' : ''}`}
           aria-haspopup="listbox"
           aria-expanded={open}
+          aria-disabled={disabled || undefined}
+          aria-readonly={readOnly || undefined}
           aria-controls={`${id}-list`}
           aria-labelledby={label ? `${id}-label` : undefined}
           aria-activedescendant={open ? `${id}-opt-${active}` : undefined}
+          {...invalidProps(id, required, error)}
           onClick={() => (open ? setOpen(false) : openMenu())}
           onKeyDown={onKeyDown}
         >
@@ -147,6 +164,18 @@ export default function Dropdown({
           </div>
         )}
       </div>
+      {other !== undefined && value[other.index] === 1 && (
+        <OtherInput
+          id={id}
+          optionText={options[other.index]}
+          text={other.text}
+          placeholder={other.placeholder}
+          invalid={other.invalid}
+          disabled={disabled}
+          readOnly={readOnly}
+          onChange={other.onChange}
+        />
+      )}
     </Control>
   )
 }

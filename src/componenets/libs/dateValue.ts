@@ -49,8 +49,17 @@ export function parseDateNumber(value: unknown): DateParts | null {
 export function formatDateNumber(value: number): string {
   const parts = parseDateNumber(value)
   if (!parts) throw new Error(`${value} is not a valid YYYYMMDD Buddhist-era date`)
-  const pad = (n: number, width: number) => String(n).padStart(width, '0')
-  return `${pad(parts.day, 2)}/${pad(parts.month, 2)}/${pad(parts.year, 4)}`
+  return `${pad(parts.day)}/${pad(parts.month)}/${pad(parts.year, 4)}`
+}
+
+// Picker year range: defaults to 100 years back and 20 ahead, and always includes the
+// current year and the selected year.
+export function yearRange(selectedYear: number | undefined, minYear?: number, maxYear?: number) {
+  const currentYear = todayParts().year
+  return {
+    min: Math.max(MIN_YEAR, Math.min(minYear ?? currentYear - 100, selectedYear ?? Infinity)),
+    max: Math.min(MAX_YEAR, Math.max(maxYear ?? currentYear + 20, selectedYear ?? -Infinity)),
+  }
 }
 
 export function todayParts(now: Date = new Date()): DateParts {
@@ -59,4 +68,67 @@ export function todayParts(now: Date = new Date()): DateParts {
     month: now.getMonth() + 1,
     day: now.getDate(),
   }
+}
+
+// Times are stored as a number HHMM, e.g. 1430 = 14:30 (0 = 00:00).
+export interface TimeParts {
+  hour: number
+  minute: number
+}
+
+const pad = (n: number, width = 2) => String(n).padStart(width, '0')
+
+export function toTimeNumber({ hour, minute }: TimeParts): number {
+  return hour * 100 + minute
+}
+
+export function parseTimeNumber(value: unknown): TimeParts | null {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) return null
+  const hour = Math.floor(value / 100)
+  const minute = value % 100
+  if (hour > 23 || minute > 59) return null
+  return { hour, minute }
+}
+
+export function formatTimeNumber(value: number): string {
+  const parts = parseTimeNumber(value)
+  if (!parts) throw new Error(`${value} is not a valid HHMM time`)
+  return `${pad(parts.hour)}:${pad(parts.minute)}`
+}
+
+export function nowTimeParts(now: Date = new Date()): TimeParts {
+  return { hour: now.getHours(), minute: now.getMinutes() }
+}
+
+// Date-times are YYYYMMDDHHMM in Buddhist Era, e.g. 256811181430 = 18/11/2568 14:30.
+export interface DateTimeParts extends DateParts, TimeParts {}
+
+export function toDateTimeNumber(parts: DateTimeParts): number {
+  return toDateNumber(parts) * 10000 + toTimeNumber(parts)
+}
+
+export function parseDateTimeNumber(value: unknown): DateTimeParts | null {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) return null
+  const date = parseDateNumber(Math.floor(value / 10000))
+  const time = parseTimeNumber(value % 10000)
+  return date && time ? { ...date, ...time } : null
+}
+
+export function formatDateTimeNumber(value: number): string {
+  if (!parseDateTimeNumber(value)) throw new Error(`${value} is not a valid YYYYMMDDHHMM Buddhist-era date-time`)
+  return `${formatDateNumber(Math.floor(value / 10000))} ${formatTimeNumber(value % 10000)}`
+}
+
+// Minutes offered by a picker: every `step` minutes, plus the current minute if it is off-step.
+export function minuteOptions(step: number, current?: number): number[] {
+  if (!Number.isInteger(step) || step < 1 || step > 60) {
+    throw new Error(`minute_step must be an integer from 1 to 60, got ${step}`)
+  }
+  const minutes = Array.from({ length: Math.ceil(60 / step) }, (_, i) => i * step)
+  if (current !== undefined && !minutes.includes(current)) minutes.push(current)
+  return minutes.sort((a, b) => a - b)
+}
+
+export function roundTimeDown({ hour, minute }: TimeParts, step: number): TimeParts {
+  return { hour, minute: minute - (minute % step) }
 }
